@@ -152,14 +152,46 @@ href="https://wa.me/918580529277?text=Hello%20Darjeeling%20Steamers%2C%20I%20wan
 <button class="close" onclick="closeCart()">×</button><h2>Your Order</h2><div id="cartList"></div>
 <div class="total" id="total">Subtotal ₹0</div>
 <div class="checkout">
+<div class="checkout">
+
 <h3>Customer details</h3>
+
 <input id="name" placeholder="Your name">
-<input id="phone" placeholder="Mobile number" inputmode="numeric">
-<textarea id="address" rows="3" placeholder="Delivery address / table number"></textarea>
-<select id="mode"><option value="delivery">Delivery</option><option value="takeaway">Takeaway</option><option value="dinein">Dine-in</option></select>
-<button class="pay" onclick="payNow()">💳 Pay online (UPI)</button>
-<button class="whatsapp" onclick="sendWhatsApp()">Order via WhatsApp</button>
-<p style="font:11px Arial;color:#777">Online UPI payment is connected to the restaurant UPI ID.</p>
+
+<input
+  id="phone"
+  placeholder="Mobile number"
+  inputmode="numeric"
+  maxlength="10"
+>
+
+<input
+  id="table"
+  placeholder="Table number"
+  inputmode="numeric"
+>
+
+<h3 style="margin-top:18px;">Payment option</h3>
+
+<label class="payment-option">
+  <input type="radio" name="payment" value="online" checked>
+  💳 Pay Online
+</label>
+
+<label class="payment-option">
+  <input type="radio" name="payment" value="restaurant">
+  💵 Pay at Restaurant
+</label>
+
+<button class="pay" onclick="processOrder()">
+  🛒 Place Order
+</button>
+
+<p style="font:11px Arial;color:#777;margin-top:10px;">
+  Choose your preferred payment option.
+</p>
+
+</div>
 </div></div></div>
 
 <script>

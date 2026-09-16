@@ -315,5 +315,5 @@ function add(name,price){let x=cart.find(i=>i.name===name);if(x)x.qty++;else car
 function change(i,n){cart[i].qty+=n;if(cart[i].qty<=0)cart.splice(i,1);renderCart()}
 function renderCart(){document.getElementById("count").textContent=cart.reduce((s,x)=>s+x.qty,0);let box=document.getElementById("cartList");box.innerHTML=cart.length?"":"<p style='color:#777;font-family:Arial'>Your cart is empty.</p>";cart.forEach((x,i)=>{box.innerHTML+=`<div class="cartitem"><div><b>${x.name}</b><div style="font:12px Arial;color:#777">₹${x.price} × ${x.qty}</div></div><div class="qty"><button onclick="change(${i},-1)">−</button> ${x.qty} <button onclick="change(${i},1)">+</button></div></div>`});let sub=cart.reduce((s,x)=>s+x.price*x.qty,0),gst=Math.round(sub*TAX),total=sub+gst;document.getElementById("total").innerHTML=`Subtotal ₹${sub}<br><span style="font-size:13px;color:#777">GST 5% ₹${gst}</span><br><b>Total ₹${total}</b>`}
 function openCart(){document.getElementById("overlay").classList.add("show");renderCart()}function closeCart(){document.getElementById("overlay").classList.remove("show")}
- 
+</script>
 </body></html>

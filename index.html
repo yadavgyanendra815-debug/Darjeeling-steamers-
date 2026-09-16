@@ -230,8 +230,131 @@ function add(name,price){let x=cart.find(i=>i.name===name);if(x)x.qty++;else car
 function change(i,n){cart[i].qty+=n;if(cart[i].qty<=0)cart.splice(i,1);renderCart()}
 function renderCart(){document.getElementById("count").textContent=cart.reduce((s,x)=>s+x.qty,0);let box=document.getElementById("cartList");box.innerHTML=cart.length?"":"<p style='color:#777;font-family:Arial'>Your cart is empty.</p>";cart.forEach((x,i)=>{box.innerHTML+=`<div class="cartitem"><div><b>${x.name}</b><div style="font:12px Arial;color:#777">₹${x.price} × ${x.qty}</div></div><div class="qty"><button onclick="change(${i},-1)">−</button> ${x.qty} <button onclick="change(${i},1)">+</button></div></div>`});let sub=cart.reduce((s,x)=>s+x.price*x.qty,0),gst=Math.round(sub*TAX),total=sub+gst;document.getElementById("total").innerHTML=`Subtotal ₹${sub}<br><span style="font-size:13px;color:#777">GST 5% ₹${gst}</span><br><b>Total ₹${total}</b>`}
 function openCart(){document.getElementById("overlay").classList.add("show");renderCart()}function closeCart(){document.getElementById("overlay").classList.remove("show")}
-function orderText(){let sub=cart.reduce((s,x)=>s+x.price*x.qty,0),gst=Math.round(sub*TAX),total=sub+gst;let lines=cart.map(x=>`${x.name} x${x.qty} = ₹${x.price*x.qty}`).join("\n");return `Hello Darjeeling Steamers,\nI want to place an order:\n\n${lines}\n\nSubtotal: ₹${sub}\nGST 5%: ₹${gst}\nTotal: ₹${total}\n\nName: ${document.getElementById("name").value}\nPhone: ${document.getElementById("phone").value}\nType: ${document.getElementById("mode").value}\nAddress/Table: ${document.getElementById("address").value}`}
-function sendWhatsApp(){if(!cart.length)return alert("Please add items first.");let phone="REPLACE_WITH_RESTAURANT_WHATSAPP";if(phone.includes("REPLACE"))return alert("Restaurant WhatsApp number अभी website में add नहीं किया गया है। Code में REPLACE_WITH_RESTAURANT_WHATSAPP को अपने WhatsApp number से बदलें।");location.href="https://wa.me/"+phone+"?text="+encodeURIComponent(orderText())}
-function payNow(){if(!cart.length)return alert("Please add items first.");let upi="pinelabs.stq3787859@pineaxis";if(upi.includes("YOUR_"))return alert("UPI payment connect करने के लिए अपना UPI ID code में डालें।");let sub=cart.reduce((s,x)=>s+x.price*x.qty,0),gst=Math.round(sub*TAX),total=sub+gst;location.href=`upi://pay?pa=${encodeURIComponent(upi)}&pn=${encodeURIComponent("Darjeeling Steamers")}&am=${total}&cu=INR&tn=${encodeURIComponent("Restaurant Order")}`}
-</script>
+ function processOrder() {
+
+  if (!cart.length) {
+    alert("Please add items first.");
+    return;
+  }
+
+  const name = document.getElementById("name").value.trim();
+  const phone = document.getElementById("phone").value.trim();
+  const table = document.getElementById("table").value.trim();
+
+  if (!name) {
+    alert("Please enter your name.");
+    return;
+  }
+
+  if (!phone || !/^\d{10}$/.test(phone)) {
+    alert("Please enter a valid 10-digit mobile number.");
+    return;
+  }
+
+  if (!table) {
+    alert("Please enter your table number.");
+    return;
+  }
+
+  const payment =
+    document.querySelector(
+      'input[name="payment"]:checked'
+    ).value;
+
+  if (payment === "online") {
+
+    startOnlinePayment();
+
+  } else {
+
+    sendWhatsAppOrder("PAY AT RESTAURANT");
+
+  }
+}
+
+
+function sendWhatsAppOrder(paymentStatus, paymentData = {}) {
+
+  const sub = cart.reduce(
+    (s, x) => s + x.price * x.qty,
+    0
+  );
+
+  const gst = Math.round(sub * TAX);
+  const total = sub + gst;
+
+  const name =
+    document.getElementById("name").value.trim();
+
+  const phone =
+    document.getElementById("phone").value.trim();
+
+  const table =
+    document.getElementById("table").value.trim();
+
+  const orderId =
+    "DS" + Date.now().toString().slice(-8);
+
+  const items = cart.map(x =>
+    `${x.name} x${x.qty} = ₹${x.price * x.qty}`
+  ).join("\n");
+
+  let paymentInfo;
+
+  if (paymentStatus === "PAID") {
+
+    paymentInfo = `
+Payment: PAID ✅
+Transaction ID: ${paymentData.transactionId || "N/A"}
+UTR / UPI Reference: ${paymentData.utr || "N/A"}
+Payment ID: ${paymentData.paymentId || "N/A"}
+`;
+
+  } else {
+
+    paymentInfo = `
+Payment: PAY AT RESTAURANT
+Amount Due: ₹${total}
+`;
+  }
+
+  const message = `
+🧾 NEW DINE-IN ORDER
+
+Order ID: ${orderId}
+
+👤 Name: ${name}
+📱 Phone: ${phone}
+🪑 Table No.: ${table}
+
+🍽️ ITEMS
+${items}
+
+Subtotal: ₹${sub}
+GST 5%: ₹${gst}
+💰 TOTAL: ₹${total}
+
+💳 PAYMENT
+${paymentInfo}
+
+Please confirm this order.
+`;
+
+  const restaurantWhatsApp = "918580529277";
+
+  window.location.href =
+    "https://wa.me/" +
+    restaurantWhatsApp +
+    "?text=" +
+    encodeURIComponent(message);
+}
+
+
+function startOnlinePayment() {
+
+  alert(
+    "Online payment gateway next step mein connect kiya jayega."
+  );
+
+}
 </body></html>

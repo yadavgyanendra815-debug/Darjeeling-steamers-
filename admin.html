@@ -25,7 +25,7 @@ input,select,textarea{width:100%;padding:11px 12px;border:1px solid #d6dbe0;bord
 .row{display:flex;justify-content:space-between;gap:10px;padding:7px 0;border-bottom:1px solid #eef0f2}.row:last-child{border-bottom:0}
 .table-wrap{overflow:auto}table{width:100%;border-collapse:collapse;min-width:650px}th,td{text-align:left;padding:10px 8px;border-bottom:1px solid #e8ebee;font-size:13px}th{font-size:12px;color:#68737d}
 .modal{position:fixed;inset:0;background:#0007;display:grid;place-items:center;padding:15px;z-index:30}.modal-box{background:#fff;border-radius:16px;width:min(650px,100%);max-height:90vh;overflow:auto;padding:18px}
-.logout{background:#fff1f0;color:#b42318;padding:8px 11px;border-radius:9px;font-weight:700}
+.logout{background:#fff1f0;color:#b42318;padding:8px 11px;border-radius:999px;font-weight:700}
 @media(max-width:800px){.stats{grid-template-columns:repeat(2,1fr)}.grid{grid-template-columns:1fr}.container{padding:12px}.top{padding:13px 12px}.brand{font-size:16px}}
 @media(max-width:430px){.stats{grid-template-columns:1fr 1fr}.stat .value{font-size:19px}}
 </style>
@@ -113,11 +113,9 @@ input,select,textarea{width:100%;padding:11px 12px;border:1px solid #d6dbe0;bord
 <script>
 /* =========================
    SUPABASE CONFIG
-   Replace ONLY these two placeholders.
-   Use the project's Publishable key (NOT Secret/Service Role key).
    ========================= */
-const SUPABASE_URL = "PASTE_YOUR_SUPABASE_PROJECT_URL_HERE";
-const SUPABASE_PUBLISHABLE_KEY = "PASTE_YOUR_SUPABASE_PUBLISHABLE_KEY_HERE";
+const SUPABASE_URL = "https://eeppbufztuigqfnfmzi.supabase.co";
+const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_qGEfos-kuU1H7pALN_As0g_ftdlxADZ";
 
 let sb;
 let ordersCache = [];

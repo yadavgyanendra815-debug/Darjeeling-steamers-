@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Darjeeling Steamers — Admin Dashboard</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;background:#f5f6f8;color:#18202a}
+button,input,select,textarea{font:inherit}button{cursor:pointer;border:0}.hidden{display:none!important}
+.top{background:#17212b;color:#fff;padding:16px 18px;display:flex;justify-content:space-between;align-items:center;gap:12px;position:sticky;top:0;z-index:10}
+.brand{font-weight:800;font-size:19px}.sub{font-size:12px;color:#c9d1d9;margin-top:2px}
+.container{max-width:1200px;margin:auto;padding:18px}
+.login{min-height:100vh;display:grid;place-items:center;padding:20px;background:linear-gradient(135deg,#17212b,#394957)}
+.login-card{background:#fff;width:min(420px,100%);padding:28px;border-radius:18px;box-shadow:0 18px 60px #0003}
+.login-card h1{margin:0 0 5px}.muted{color:#68737d}.field{margin:14px 0}.field label{display:block;font-size:13px;font-weight:700;margin-bottom:6px}
+input,select,textarea{width:100%;padding:11px 12px;border:1px solid #d6dbe0;border-radius:10px;background:#fff;outline:none}input:focus,select:focus,textarea:focus{border-color:#5d6b78}
+.primary{background:#17212b;color:#fff;padding:11px 16px;border-radius:10px;font-weight:700}.secondary{background:#e9edf0;color:#17212b;padding:9px 12px;border-radius:9px;font-weight:700}.danger{background:#b42318;color:#fff;padding:9px 12px;border-radius:9px;font-weight:700}
+.error{color:#b42318;background:#fff0ef;padding:10px;border-radius:9px;font-size:13px;margin-top:10px}.success{color:#176b3a;background:#ecfdf3;padding:10px;border-radius:9px;font-size:13px;margin-top:10px}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px}.stat{background:#fff;border-radius:14px;padding:16px;box-shadow:0 1px 5px #0000000b}.stat .label{font-size:12px;color:#68737d}.stat .value{font-size:23px;font-weight:800;margin-top:5px}
+.grid{display:grid;grid-template-columns:1.25fr .75fr;gap:16px}.card{background:#fff;border-radius:14px;padding:16px;box-shadow:0 1px 5px #0000000b;margin-bottom:16px}.card h2{font-size:17px;margin:0 0 12px}
+.tabs{display:flex;gap:8px;overflow:auto;margin:4px 0 16px}.tab{white-space:nowrap;background:#e9edf0;padding:9px 13px;border-radius:9px;font-weight:700}.tab.active{background:#17212b;color:#fff}
+.order{border:1px solid #e1e5e8;border-radius:12px;padding:13px;margin:10px 0}.order-head{display:flex;justify-content:space-between;gap:10px}.order-id{font-weight:800}.small{font-size:12px;color:#68737d}.badge{display:inline-block;padding:4px 8px;border-radius:999px;font-size:11px;font-weight:800;background:#eef1f3}
+.order-body{margin-top:10px;line-height:1.55}.actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px}.actions select{width:auto;min-width:145px;padding:8px}
+.row{display:flex;justify-content:space-between;gap:10px;padding:7px 0;border-bottom:1px solid #eef0f2}.row:last-child{border-bottom:0}
+.table-wrap{overflow:auto}table{width:100%;border-collapse:collapse;min-width:650px}th,td{text-align:left;padding:10px 8px;border-bottom:1px solid #e8ebee;font-size:13px}th{font-size:12px;color:#68737d}
+.modal{position:fixed;inset:0;background:#0007;display:grid;place-items:center;padding:15px;z-index:30}.modal-box{background:#fff;border-radius:16px;width:min(650px,100%);max-height:90vh;overflow:auto;padding:18px}
+.logout{background:#fff1f0;color:#b42318;padding:8px 11px;border-radius:999px;font-weight:700}
+.item-suggest{position:absolute;left:0;right:0;top:calc(100% + 4px);z-index:60;background:#fff;border:1px solid #d6dbe0;border-radius:10px;box-shadow:0 10px 25px #0002;max-height:220px;overflow:auto}
+.item-suggest button{display:block;width:100%;text-align:left;background:#fff;padding:10px 12px;border-bottom:1px solid #eef0f2;color:#18202a}
+.item-suggest button:hover{background:#f5f7f8}
+.item-suggest .suggest-name{font-weight:800}
+.item-suggest .suggest-meta{font-size:11px;color:#68737d;margin-top:2px}
+.edit-row{position:relative}
+
+.new-order-alert{position:sticky;top:72px;z-index:9;margin:0 auto;padding:12px 18px;max-width:1280px;background:#fff7ed;border:2px solid #f59e0b;color:#7c2d12;display:flex;align-items:center;justify-content:space-between;gap:12px;box-shadow:0 10px 28px rgba(124,45,18,.14);animation:newOrderPulse 1s ease-in-out infinite alternate}
+.new-order-alert button{background:#7c2d12;color:#fff;padding:9px 13px;border-radius:9px;font-weight:800;white-space:nowrap}
+.new-order-alert b{font-size:14px}.new-order-alert div div{font-size:12px;margin-top:2px}
+@keyframes newOrderPulse{from{transform:scale(1)}to{transform:scale(1.01)}}
+@media(max-width:600px){.top{align-items:flex-start}.top>div:last-child{flex-direction:column;align-items:stretch}.new-order-alert{top:66px;margin:0 8px;border-radius:12px;padding:11px 12px}}
+@media(max-width:800px){.stats{grid-template-columns:repeat(2,1fr)}.grid{grid-template-columns:1fr}.container{padding:12px}.top{padding:13px 12px}.brand{font-size:16px}}
+@media(max-width:430px){.stats{grid-template-columns:1fr 1fr}.stat .value{font-size:19px}}
+
+/* Premium dashboard layer */
+body{background:radial-gradient(circle at 10% 0%,rgba(11,90,72,.08),transparent 28%),linear-gradient(180deg,#f7f8f6 0%,#eef2ef 100%);color:#173b34}
+.top{background:linear-gradient(135deg,#173b34,#0b5a48);box-shadow:0 12px 35px rgba(10,61,49,.18);padding:18px 22px}
+.top .brand{font-size:21px;letter-spacing:.8px}.top .sub{opacity:.78;margin-top:3px}
+.container{max-width:1280px;padding:22px}
+.tabs{background:rgba(255,255,255,.72);border:1px solid #dde5df;border-radius:16px;padding:6px;box-shadow:0 8px 25px rgba(23,59,52,.06)}
+.tab{border:0;background:transparent;padding:11px 17px;border-radius:11px;color:#47645c}
+.tab.active{background:#fff;color:#0b5a48;box-shadow:0 5px 16px rgba(23,59,52,.12)}
+.stats{gap:15px}
+.stat{background:rgba(255,255,255,.92);border:1px solid #e0e7e3;border-radius:18px;padding:18px;box-shadow:0 9px 25px rgba(23,59,52,.06);position:relative;overflow:hidden}
+.stat:after{content:"";position:absolute;right:-28px;top:-28px;width:90px;height:90px;border-radius:50%;background:rgba(11,90,72,.07)}
+.stat .label{font-size:12px;letter-spacing:.5px;text-transform:uppercase}.stat .value{font-size:28px}
+.card{border:1px solid #e0e7e3;border-radius:20px;box-shadow:0 12px 30px rgba(23,59,52,.07);background:rgba(255,255,255,.95)}
+.card h2{font-size:23px}
+.order{border:1px solid #e3e9e5;border-radius:15px;padding:14px;background:#fff;margin-bottom:10px;box-shadow:0 5px 14px rgba(23,59,52,.04)}
+.order:hover{transform:translateY(-1px);box-shadow:0 9px 20px rgba(23,59,52,.08)}
+.badge{border-radius:999px;padding:6px 10px;background:#eaf3ef;color:#0b5a48}
+.primary{background:#0b5a48;box-shadow:0 7px 16px rgba(11,90,72,.18)}
+.secondary{border-radius:9px}
+.payment-btn{background:#0b5a48;color:#fff;padding:10px 13px;border-radius:10px;font-weight:800;box-shadow:0 7px 16px rgba(11,90,72,.14)} .payment-btn:hover{transform:translateY(-1px)} .paid-ok{display:inline-flex;align-items:center;padding:9px 11px;border-radius:10px;background:#eaf7ef;color:#176b3a;font-size:12px;font-weight:800}
+.table-board{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:9px}.table-tile{position:relative;border:1px solid #dfe8e3;background:#f8fbf9;border-radius:13px;padding:10px 8px;text-align:center;cursor:pointer;transition:.15s}.table-tile:hover{transform:translateY(-1px);box-shadow:0 6px 16px rgba(23,59,52,.08)}.table-tile.active{border-color:#0b5a48;background:#eaf7f2;box-shadow:0 0 0 2px rgba(11,90,72,.10)}.table-tile.busy{border-color:#f2c46d;background:#fff9ec}.table-tile.paid{border-color:#8ed0a9;background:#eefaf2}.table-no{font-weight:900;font-size:15px;color:#173f35}.table-state{font-size:10px;font-weight:800;margin-top:3px;color:#66756f}.table-dot{position:absolute;right:7px;top:7px;width:7px;height:7px;border-radius:50%;background:#b7c1bd}.table-tile.busy .table-dot{background:#e09a00}.table-tile.paid .table-dot{background:#238b57}.selected-table-info{margin-top:12px;padding:11px 13px;border-radius:12px;background:#f3f7f5;border:1px solid #e0e8e4;min-height:42px}.selected-table-info b{color:#173f35}@media(max-width:700px){.table-board{grid-template-columns:repeat(5,minmax(55px,1fr));gap:6px}.table-tile{padding:8px 4px}.table-no{font-size:13px}}
+.edit-row{display:grid;grid-template-columns:1.5fr .6fr .8fr auto;gap:8px;align-items:center;margin:8px 0}.edit-row input{padding:9px}.cancel-box{background:#fff7ed;border:1px solid #fed7aa;padding:12px;border-radius:12px;margin-top:10px}@media(max-width:600px){.edit-row{grid-template-columns:1fr 70px 90px 42px}}
+
+/* Refined premium admin UI: compact density with clear hierarchy */
+.top{padding:12px 18px;border-bottom:1px solid rgba(255,255,255,.08)}.top .brand{font-size:18px}.top .sub{font-size:11px}
+.container{max-width:1240px;padding:16px}.tabs{padding:5px;border-radius:13px;gap:5px}.tab{padding:9px 13px;font-size:12px}.stats{gap:12px}.stat{border-radius:15px;padding:14px}.stat .value{font-size:24px}.stat .label{font-size:11px}
+.grid{gap:12px}.card{border-radius:16px;padding:14px;margin-bottom:12px}.card h2{font-size:19px;margin-bottom:10px}.order{border-radius:12px;padding:12px;margin:8px 0}.order-body{font-size:13px}.actions{gap:6px;margin-top:8px}.actions button,.actions select,.secondary,.primary,.payment-btn{font-size:12px;padding:8px 10px}.badge{padding:5px 8px;font-size:10px}
+.table-wrap table{min-width:620px}th,td{padding:8px 7px;font-size:12px}.new-order-alert{padding:10px 14px;border-radius:12px}.new-order-alert b{font-size:13px}.new-order-alert div div{font-size:11px}
+@media(max-width:800px){.container{padding:11px}.top{padding:11px 12px}.top .brand{font-size:16px}.stats{gap:9px}.stat{padding:12px}.stat .value{font-size:21px}.card{padding:12px;border-radius:14px}.card h2{font-size:18px}}
+
+/* Delete / Recovery */
+.recovery-box{background:#fffaf0;border:1px solid #f1dfb6;border-radius:14px;padding:12px;margin-bottom:12px}.recovery-time{font-weight:800;color:#9a5b00}.cancel-delete{background:#b42318;color:#fff;padding:9px 12px;border-radius:9px;font-weight:800}.recover-btn{background:#0b5a48;color:#fff;padding:9px 12px;border-radius:9px;font-weight:800}.expired{color:#b42318;font-weight:800}
+.action-modal-box{width:min(520px,100%);text-align:center;padding:28px 24px;border-radius:22px;box-shadow:0 20px 60px #0003}.action-icon{width:62px;height:62px;margin:0 auto 12px;border-radius:50%;display:grid;place-items:center;background:#fff1f0;font-size:30px}.action-modal-box h2{margin:0 0 8px;color:#173f35;font-size:25px}.action-message{margin:0;color:#52635e;line-height:1.55;white-space:pre-line}.action-warning{margin:18px 0 4px;text-align:left;background:#fff6f5;border:1px solid #ffd4cf;border-radius:14px;padding:14px;color:#8f241c;line-height:1.5}.action-modal-actions{justify-content:center;margin-top:20px}.action-modal-actions button{min-width:120px}.action-modal-actions .cancel-delete{min-width:170px}.modal-x{position:absolute;right:14px;top:10px;width:36px;height:36px;border-radius:50%;background:#f1f5f3;color:#58716a;font-size:24px;line-height:1}.action-modal-box{position:relative}.modal-input{margin-top:16px;text-align:left;padding:13px 14px;border:1px solid #d8e3de;border-radius:12px;box-shadow:inset 0 1px 2px #00000008}.modal-input:focus{border-color:#0b5a48;box-shadow:0 0 0 3px rgba(11,90,72,.10)}.input-icon{background:#eaf7f2;color:#0b5a48}.danger-soft{background:#fff0f0!important;color:#b42318!important;border:1px solid #ffd1d1!important}
+.restaurant-status{display:flex;align-items:center;gap:8px;padding:7px 11px;border:1px solid var(--line);border-radius:999px;background:#fff;font:700 12px Arial;color:var(--ink)}
+.restaurant-status .dot{width:9px;height:9px;border-radius:50%;background:#999;box-shadow:0 0 0 4px rgba(0,0,0,.05)}
+.restaurant-status.online .dot{background:#238b57;box-shadow:0 0 0 4px rgba(35,139,87,.12)}
+.restaurant-status.offline .dot{background:#c94b4b;box-shadow:0 0 0 4px rgba(201,75,75,.12)}
+.restaurant-toggle{border:0;border-radius:999px;padding:8px 13px;cursor:pointer;font:800 12px Arial;background:#238b57;color:#fff}
+.restaurant-toggle.offline{background:#c94b4b}
+@media(max-width:700px){.restaurant-status{display:flex}}
+</style>
+</head>
+<body>
+
+<div id="loginScreen" class="login">
+  <div class="login-card">
+    <h1>Darjeeling Steamers</h1>
+    <p class="muted">Admin Dashboard Login</p>
+    <form id="loginForm">
+      <div class="field"><label>Email</label><input id="email" type="email" required autocomplete="username"></div>
+      <div class="field"><label>Password</label><input id="password" type="password" required autocomplete="current-password"></div>
+      <button class="primary" style="width:100%" type="submit">Login</button>
+      <div id="loginMsg"></div>
+    </form>
+  </div>
+</div>
+
+<div id="app" class="hidden">
+  <header class="top">
+    <div><div class="brand">Darjeeling Steamers — Admin</div><div class="sub">Dine-in • Pay at Restaurant</div></div>
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end">
+      <div id="restaurantStatus" class="restaurant-status"><span class="dot"></span><span>Checking restaurant…</span></div>
+      <button id="restaurantToggleBtn" class="restaurant-toggle" type="button">Restaurant: …</button>
+      <button id="alertSetupBtn" class="logout" type="button">🔔 Enable Order Alerts</button>
+      <button id="logoutBtn" class="logout">Logout</button>
+    </div>
+  </header>
+  <div id="newOrderAlert" class="new-order-alert hidden" role="alert" aria-live="assertive">
+    <div><b>🔔 NEW ORDER RECEIVED</b><div id="newOrderAlertText">A new order has arrived.</div></div>
+    <button type="button" onclick="openNewOrders()">View New Orders</button>
+  </div>
+  <main class="container">
+    <div class="tabs">
+      <button class="tab active" data-tab="dashboard">Dashboard</button>
+      <button class="tab" data-tab="orders">Orders</button>
+      <button class="tab" data-tab="history">Order History</button>
+      <button class="tab" data-tab="deleted">Recently Deleted</button>
+      <button class="tab" data-tab="sales">Sales History</button>
+      <button class="tab" data-tab="expenses">Expenses</button>
+      <button class="tab" data-tab="profitloss">Profit &amp; Loss</button>
+    </div>
+
+    <section id="dashboardTab">
+      <div class="stats">
+        <div class="stat"><div class="label">Today's Orders</div><div id="todayOrders" class="value">0</div></div>
+        <div class="stat"><div class="label">Today's Sales</div><div id="todaySales" class="value">₹0</div></div>
+        <div class="stat"><div class="label">Today's GST</div><div id="todayGst" class="value">₹0</div></div>
+        <div class="stat"><div class="label">Today's Expenses</div><div id="todayExpenses" class="value">₹0</div></div>
+      </div>
+      <div class="grid">
+        <div class="card"><h2>Incoming / Recent Orders</h2><div id="recentOrders"></div></div>
+        <div class="card"><h2>Add Expense</h2>
+          <form id="expenseForm">
+            <div class="field"><label>Date</label><input id="expenseDate" type="date" required></div>
+            <div class="field"><label>Title</label><input id="expenseTitle" required placeholder="e.g. Vegetables"></div>
+            <div class="field"><label>Amount (₹)</label><input id="expenseAmount" type="number" min="0" step="0.01" required></div>
+            <div class="field"><label>Notes</label><textarea id="expenseNotes" rows="3" placeholder="Optional"></textarea></div>
+            <button class="primary" type="submit">Add Expense</button>
+            <div id="expenseMsg"></div>
+          </form>
+        </div>
+      </div>
+    </section>
+
+    <section id="ordersTab" class="hidden">
+      <div class="card">
+        <h2>25 Table Order Management</h2>
+        <div class="small" style="margin:-4px 0 12px">Select a table to follow its order from <b>New → Preparing → Served → Payment Received</b>. The customer's table number is used automatically.</div>
+        <div id="tableBoard" class="table-board"></div>
+        <div id="selectedTableInfo" class="selected-table-info"></div>
+      </div>
+      <div class="card"><h2>Order Workflow</h2><div id="orderStageTabs" class="tabs" style="margin-bottom:12px">
+        <button class="tab active" data-stage="New">New Orders</button>
+        <button class="tab" data-stage="Preparing">Preparing</button>
+        <button class="tab" data-stage="Served">Payment Pending</button>
+        <button class="tab" data-stage="Paid">Payment Received</button>
+        <button class="tab" data-stage="Cancelled">Cancelled</button>
+      </div><div id="ordersList"></div></div>
+    </section>
+    <section id="historyTab" class="hidden">
+      <div class="card"><h2>Order History</h2><div id="historyList"></div></div>
+    </section>
+    <section id="deletedTab" class="hidden">
+      <div class="card"><h2>Recently Deleted</h2><div class="recovery-box">Deleted completed orders stay here for <b>24 hours</b>. After that they are permanently removed from Supabase.</div><div id="deletedList"></div></div>
+    </section>
+
+    <section id="salesTab" class="hidden">
+      <div class="card">
+        <h2>Sales History</h2>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px;align-items:end">
+          <div class="field" style="margin:0;min-width:160px;flex:1"><label>View</label><select id="salesView"><option value="date">Single Date</option><option value="range">Custom Date Range</option><option value="month">Monthly View</option></select></div>
+          <div id="salesDateWrap" class="field" style="margin:0;min-width:170px;flex:1"><label>Date</label><input id="salesDate" type="date"></div>
+          <div id="salesFromWrap" class="field hidden" style="margin:0;min-width:170px;flex:1"><label>From Date</label><input id="salesFrom" type="date"></div>
+          <div id="salesToWrap" class="field hidden" style="margin:0;min-width:170px;flex:1"><label>To Date</label><input id="salesTo" type="date"></div>
+          <div id="salesMonthWrap" class="field hidden" style="margin:0;min-width:170px;flex:1"><label>Month</label><input id="salesMonth" type="month"></div>
+          <button class="secondary" id="salesRefresh" style="margin-bottom:0">Load Sales</button>
+        </div>
+        <div id="salesSummary"></div>
+        <div class="table-wrap"><table><thead><tr><th>Order</th><th>Customer</th><th>Table</th><th>Subtotal</th><th>GST</th><th>Total</th><th>Status</th><th>Time</th></tr></thead><tbody id="salesTable"></tbody></table></div>
+      </div>
+    </section>
+
+    <section id="expensesTab" class="hidden">
+      <div class="card"><h2>Expense History</h2>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px">
+          <input id="expenseHistoryDate" type="date" style="max-width:190px">
+          <button class="secondary" id="expenseRefresh">Load Date</button>
+        </div>
+        <div class="table-wrap"><table><thead><tr><th>Date</th><th>Title</th><th>Amount</th><th>Notes</th><th>Created</th><th>Actions</th></tr></thead><tbody id="expenseTable"></tbody></table></div>
+      </div>
+    </section>
+
+    <section id="profitlossTab" class="hidden">
+      <div class="card">
+        <h2>Total Profit / Loss</h2>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px;align-items:end">
+          <div class="field" style="margin:0;min-width:170px;flex:1"><label>View</label><select id="plView"><option value="date">Single Date</option><option value="range">Custom Date Range</option><option value="week">Weekly View</option><option value="month">Monthly View</option></select></div>
+          <div id="plDateWrap" class="field" style="margin:0;min-width:170px;flex:1"><label>Date</label><input id="plDate" type="date"></div>
+          <div id="plFromWrap" class="field hidden" style="margin:0;min-width:170px;flex:1"><label>From Date</label><input id="plFrom" type="date"></div>
+          <div id="plToWrap" class="field hidden" style="margin:0;min-width:170px;flex:1"><label>To Date</label><input id="plTo" type="date"></div>
+          <div id="plMonthWrap" class="field hidden" style="margin:0;min-width:170px;flex:1"><label>Month</label><input id="plMonth" type="month"></div>
+          <button class="secondary" id="plRefresh">Check Profit / Loss</button>
+        </div>
+        <div id="plSummary"></div>
+        <div class="small" style="margin-top:8px">Profit/Loss is calculated as <b>completed paid sales excluding GST − recorded expenses</b>. Cancelled and deleted orders are excluded.</div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<div id="expenseModal" class="modal hidden"><div class="modal-box" style="width:min(560px,100%)"><div style="display:flex;justify-content:space-between;align-items:center"><h2 style="margin:0">Modify Expense</h2><button class="secondary" id="expenseModalClose">Close</button></div><div class="field"><label>Date</label><input id="editExpenseDate" type="date"></div><div class="field"><label>Title</label><input id="editExpenseTitle"></div><div class="field"><label>Amount (₹)</label><input id="editExpenseAmount" type="number" min="0" step="0.01"></div><div class="field"><label>Notes</label><textarea id="editExpenseNotes" rows="3"></textarea></div><div class="actions" style="justify-content:flex-end"><button class="secondary" id="expenseModalCancel">Cancel</button><button class="primary" id="expenseModalSave">Save Changes</button></div><div id="editExpenseMsg"></div></div></div>
+<div id="modal" class="modal hidden"><div class="modal-box"><div style="display:flex;justify-content:space-between;align-items:center"><h2 style="margin:0">Order Details</h2><button id="closeModal" class="secondary">Close</button></div><div id="modalContent" style="margin-top:12px"></div></div></div>
+<div id="actionModal" class="modal hidden"><div class="modal-box action-modal-box" role="dialog" aria-modal="true" aria-labelledby="actionTitle"><button class="modal-x" id="actionClose" type="button" aria-label="Close">×</button><div class="action-icon" id="actionIcon">⚠️</div><h2 id="actionTitle">Confirm Action</h2><p id="actionMessage" class="action-message"></p><div id="actionWarning" class="action-warning hidden"></div><div class="actions action-modal-actions"><button id="actionCancel" class="secondary" type="button">Cancel</button><button id="actionConfirm" class="cancel-delete" type="button">Confirm</button></div></div></div>
+<div id="inputModal" class="modal hidden"><div class="modal-box action-modal-box" role="dialog" aria-modal="true" aria-labelledby="inputTitle"><button class="modal-x" id="inputClose" type="button" aria-label="Close">×</button><div class="action-icon input-icon">✎</div><h2 id="inputTitle">Enter Details</h2><p id="inputMessage" class="action-message"></p><input id="inputValue" class="modal-input" type="text" maxlength="500" autocomplete="off"><div class="actions action-modal-actions"><button id="inputCancel" class="secondary" type="button">Cancel</button><button id="inputConfirm" class="primary" type="button">Continue</button></div></div></div>
+
+<script>
+const SUPABASE_URL = "https://eeppbufztuigqfcnfmzi.supabase.co";
+const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_qGEfos-kuU1H7pALN_As0g_ftdIxADZ";
+const SMS_FUNCTION_URL = SUPABASE_URL + "/functions/v1/send-bill-sms";
+let sb, ordersCache=[], historyOrdersCache=[], deletedOrdersCache=[], ordersItemsCache={}, currentStage="New", selectedTable="all";
+const ADMIN_MENU_ITEMS = [{"name":"Vegetarian Thali","price":320.0,"category":"Thali","description":""},{"name":"Chicken Thali","price":420.0,"category":"Thali","description":""},{"name":"Mutton Thali","price":460.0,"category":"Thali","description":""},{"name":"Pork Thali","price":510.0,"category":"Thali","description":""},{"name":"Rice","price":150.0,"category":"Thali","description":""},{"name":"Daal","price":180.0,"category":"Thali","description":""},{"name":"Chicken Curry","price":350.0,"category":"Thali","description":""},{"name":"Mutton Curry","price":400.0,"category":"Thali","description":""},{"name":"Pork Curry","price":450.0,"category":"Thali","description":""},{"name":"Roti","price":25.0,"category":"Thali","description":""},{"name":"Ghee","price":50.0,"category":"Thali","description":""},{"name":"Vegetable Soup","price":150.0,"category":"Soups","description":"Slow cooked vegetable broth."},{"name":"Darjeeling Style Soup","price":190.0,"category":"Soups","description":"Darjeeling style grated veggies peppery broth."},{"name":"Coriander Lemon","price":200.0,"category":"Soups","description":"Slow cooked vegetable broth with coriander and a dash of lemon."},{"name":"Manchow","price":230.0,"category":"Soups","description":"Spicy tangy soup served with fried noodles."},{"name":"Steamed Momo","price":200.0,"category":"Momos","description":"Juicy dumplings, freshly steamed to order."},{"name":"Fried Momo","price":220.0,"category":"Momos","description":"Crispy, golden dumplings."},{"name":"Mokthuk / Soupy","price":240.0,"category":"Momos","description":"Steamed momo served in a flavorful vegetable broth."},{"name":"Butter Garlic","price":240.0,"category":"Momos","description":"Crispy fried momo tossed in rich butter and garlic."},{"name":"Jhol Momo","price":240.0,"category":"Momos","description":"Momo served in a rich, soybean and tomato gravy."},{"name":"Sesame Chilli Oil","price":240.0,"category":"Momos","description":"Momo served with sesame chilli oil."},{"name":"Fluffy / Buns","price":200.0,"category":"Momos","description":"Fermented sour dough crust. 5 pcs."},{"name":"Buckwheat","price":250.0,"category":"Momos","description":"Buckwheat crust."},{"name":"Kothey / Potsticker","price":240.0,"category":"Momos","description":"Pan fried."},{"name":"Laphiing (Dry/Soupy)","price":120.0,"category":"Snacks","description":""},{"name":"Potato Fries","price":150.0,"category":"Snacks","description":""},{"name":"Chat Pata Chaat","price":150.0,"category":"Snacks","description":""},{"name":"Shaphalay","price":200.0,"category":"Snacks","description":"Crispy Tibetan fried bread stuffed with spiced minced meat or veggies."},{"name":"Fried Chicken Wings","price":400.0,"category":"Snacks","description":""},{"name":"Golden Prawns","price":650.0,"category":"Snacks","description":"Frippy crumbed prawns served with hot honey butter."},{"name":"Thukpa","price":200.0,"category":"Noodles & Rice","description":"Himalayan noodle soup with fresh vegetables, warming spices, and a savory broth."},{"name":"Stir Fried Noodles","price":250.0,"category":"Noodles & Rice","description":""},{"name":"Thenthuk","price":220.0,"category":"Noodles & Rice","description":"A comforting Himalayan hand-pulled noodle soup with vegetables, tender broth, and warming spices."},{"name":"Dry Stir Fried Thenthuk","price":240.0,"category":"Noodles & Rice","description":"Hand-pulled Himalayan noodles stir-fried with vegetables and Himalayan spices."},{"name":"Phing Noodle Soup","price":250.0,"category":"Noodles & Rice","description":"A light and flavorful soup with glass noodles, vegetables, and aromatic spices."},{"name":"Stir Fried Phing Noodles","price":270.0,"category":"Noodles & Rice","description":"Wok-tossed glass noodles with vibrant vegetables and Himalayan spices."},{"name":"Keema Noodles (Chicken)","price":350.0,"category":"Noodles & Rice","description":""},{"name":"Plain Rice","price":150.0,"category":"Noodles & Rice","description":""},{"name":"Fried Rice","price":220.0,"category":"Noodles & Rice","description":""},{"name":"Egg Fried Rice","price":250.0,"category":"Noodles & Rice","description":""},{"name":"Paneer Chilli","price":350.0,"category":"Sides","description":""},{"name":"Bhutanese Dhatshi","price":320.0,"category":"Sides","description":"Bhutan's iconic rich creamy dish of melted cheese with chillies and potato."},{"name":"Chicken Chilli","price":350.0,"category":"Sides","description":""},{"name":"Mutton Chilli","price":450.0,"category":"Sides","description":""},{"name":"Prawn Chilli","price":580.0,"category":"Sides","description":""},{"name":"Pork Chilli","price":500.0,"category":"Sides","description":""},{"name":"Korean Fried Chicken Wings","price":450.0,"category":"Asian Fusion","description":""},{"name":"Korean Dry Ramyun","price":220.0,"category":"Asian Fusion","description":""},{"name":"Soupy Korean Ramyun","price":280.0,"category":"Asian Fusion","description":""},{"name":"Teokbokki","price":350.0,"category":"Asian Fusion","description":""},{"name":"Ra-Bokki","price":400.0,"category":"Asian Fusion","description":"Ramen + Teokbokki"},{"name":"Bibimbap","price":380.0,"category":"Asian Fusion","description":""},{"name":"Kimbap","price":350.0,"category":"Asian Fusion","description":""},{"name":"Katsu","price":450.0,"category":"Asian Fusion","description":""},{"name":"Bao (2 pcs)","price":350.0,"category":"Asian Fusion","description":""},{"name":"Corn Dog","price":300.0,"category":"Asian Fusion","description":""},{"name":"Lemonade","price":120.0,"category":"Beverages","description":""},{"name":"Blue Lemonade","price":150.0,"category":"Beverages","description":""},{"name":"Crimson Lemonade","price":150.0,"category":"Beverages","description":""},{"name":"Virgin Mojito","price":150.0,"category":"Beverages","description":""},{"name":"Blue Mojito","price":170.0,"category":"Beverages","description":""},{"name":"Crimson Mojito","price":170.0,"category":"Beverages","description":""},{"name":"Lemon Iced Tea","price":130.0,"category":"Beverages","description":""},{"name":"Peach Iced Tea","price":150.0,"category":"Beverages","description":""},{"name":"Milk Boba Tea","price":200.0,"category":"Beverages","description":""},{"name":"Dalgona Boba Tea","price":200.0,"category":"Beverages","description":""},{"name":"Blue Latte Boba Tea","price":200.0,"category":"Beverages","description":""},{"name":"Chocolate Boba Tea","price":200.0,"category":"Beverages","description":""},{"name":"Matcha Boba Tea","price":250.0,"category":"Beverages","description":""},{"name":"Green Apple Soda","price":150.0,"category":"Beverages","description":""},{"name":"Pink Guava Soda","price":150.0,"category":"Beverages","description":""},{"name":"Litchi Soda","price":150.0,"category":"Beverages","description":""},{"name":"Rhododendron Soda","price":150.0,"category":"Beverages","description":""},{"name":"Seasonal Fruit Soda","price":150.0,"category":"Beverages","description":""},{"name":"Masala Coke Soda","price":150.0,"category":"Beverages","description":""},{"name":"Bottled Water","price":30.0,"category":"Beverages","description":""},{"name":"Coca-Cola","price":50.0,"category":"Beverages","description":""},{"name":"Milk Tea","price":60.0,"category":"Beverages","description":""},{"name":"Black Coffee","price":80.0,"category":"Beverages","description":""},{"name":"Milk Coffee","price":90.0,"category":"Beverages","description":""},{"name":"Ginger Lemon Honey Tea","price":150.0,"category":"Beverages","description":""},{"name":"Teapot (2 cups)","price":150.0,"category":"Beverages","description":""},{"name":"Additional Cup","price":50.0,"category":"Beverages","description":""},{"name":"Ginger","price":20.0,"category":"Beverages","description":""},{"name":"Lemon","price":30.0,"category":"Beverages","description":""},{"name":"Honey","price":50.0,"category":"Beverages","description":""},{"name":"Boba-Noffee","price":220.0,"category":"Desserts","description":""},{"name":"Gulab Jamun (2 pcs)","price":120.0,"category":"Desserts","description":""},{"name":"Dessert of the Day","price":0.0,"category":"Desserts","description":"Price varies — confirm at restaurant."},{"name":"Ting-Mo (2 pcs)","price":150.0,"category":"Local Goodness","description":""},{"name":"Siddu (1 pc)","price":180.0,"category":"Local Goodness","description":""},{"name":"Siddu + Ghee","price":230.0,"category":"Local Goodness","description":""}];
+
+let orderAlertsInitialized=false, knownNewOrderIds=new Set(), orderAlertChannel=null, audioCtx=null, alertAudioReady=false, alertTimer=null, newOrderAlarmInterval=null, orderAlertsEnabled=false, restaurantOnline=true, restaurantStatusReady=false, restaurantStatusChannel=null;
+function configured(){return !SUPABASE_URL.includes("PASTE_")&&!SUPABASE_PUBLISHABLE_KEY.includes("PASTE_")}
+function money(n){return "₹"+Number(n||0).toLocaleString("en-IN",{minimumFractionDigits:2,maximumFractionDigits:2})}
+function esc(v){return String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]))}
+function showActionDialog({title="Confirm Action",message="",warning="",confirmText="Confirm",danger=true,icon="⚠️"}){return new Promise(resolve=>{const modal=document.getElementById("actionModal"),titleEl=document.getElementById("actionTitle"),msgEl=document.getElementById("actionMessage"),warnEl=document.getElementById("actionWarning"),ok=document.getElementById("actionConfirm"),cancel=document.getElementById("actionCancel"),close=document.getElementById("actionClose"),iconEl=document.getElementById("actionIcon");titleEl.textContent=title;msgEl.textContent=message;warnEl.textContent=warning;warnEl.classList.toggle("hidden",!warning);ok.textContent=confirmText;ok.className=danger?"cancel-delete":"primary";iconEl.textContent=icon;modal.classList.remove("hidden");const finish=value=>{modal.classList.add("hidden");ok.onclick=null;cancel.onclick=null;close.onclick=null;modal.onclick=null;resolve(value)};ok.onclick=()=>finish(true);cancel.onclick=()=>finish(false);close.onclick=()=>finish(false);modal.onclick=e=>{if(e.target===modal)finish(false)}})}
+function showInfoDialog(message,title="Darjeeling Steamers"){return showActionDialog({title,message,confirmText:"OK",danger:false,icon:"✓"})}
+function showInputDialog({title="Enter Details",message="",placeholder="",confirmText="Continue",required=true}){return new Promise(resolve=>{const modal=document.getElementById("inputModal"),titleEl=document.getElementById("inputTitle"),msgEl=document.getElementById("inputMessage"),input=document.getElementById("inputValue"),ok=document.getElementById("inputConfirm"),cancel=document.getElementById("inputCancel"),close=document.getElementById("inputClose");titleEl.textContent=title;msgEl.textContent=message;input.value="";input.placeholder=placeholder;ok.textContent=confirmText;modal.classList.remove("hidden");setTimeout(()=>input.focus(),50);const finish=value=>{modal.classList.add("hidden");ok.onclick=null;cancel.onclick=null;close.onclick=null;modal.onclick=null;input.onkeydown=null;resolve(value)};ok.onclick=()=>{const v=input.value.trim();if(required&&!v){input.focus();input.classList.add("danger-soft");setTimeout(()=>input.classList.remove("danger-soft"),700);return}finish(v)};cancel.onclick=()=>finish(null);close.onclick=()=>finish(null);modal.onclick=e=>{if(e.target===modal)finish(null)};input.onkeydown=e=>{if(e.key==="Enter")ok.click();if(e.key==="Escape")finish(null)}})}
+window.alert=(message)=>{showInfoDialog(String(message||""));};
+
+function localDate(){const d=new Date(),p=new Intl.DateTimeFormat("en-CA",{timeZone:"Asia/Kolkata",year:"numeric",month:"2-digit",day:"2-digit"}).formatToParts(d),o={};p.forEach(x=>o[x.type]=x.value);return `${o.year}-${o.month}-${o.day}`}
+function dayRange(date){return {start:`${date}T00:00:00+05:30`,end:`${date}T23:59:59.999+05:30`}}
+function fmtTime(v){return v?new Date(v).toLocaleString("en-IN",{timeZone:"Asia/Kolkata",dateStyle:"medium",timeStyle:"short"}):""}
+async function init(){if(!configured()){document.getElementById("loginMsg").innerHTML='<div class="error">Supabase config missing.</div>';return}sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY);const {data:{session}}=await sb.auth.getSession();if(session)showApp()}
+function showApp(){document.getElementById("loginScreen").classList.add("hidden");document.getElementById("app").classList.remove("hidden");["expenseDate","salesDate","expenseHistoryDate","plDate"].forEach(id=>document.getElementById(id).value=localDate());document.getElementById("salesFrom").value=localDate();document.getElementById("salesTo").value=localDate();document.getElementById("salesMonth").value=localDate().slice(0,7);document.getElementById("plFrom").value=localDate();document.getElementById("plTo").value=localDate();document.getElementById("plMonth").value=localDate().slice(0,7);updateSalesView();updateProfitLossView();loadAlertPreference();setupOrderAlerts();setupRestaurantStatus();refreshAll()}
+async function refreshAll(){await Promise.all([loadToday(),loadOrders(),loadExpenses(localDate())])}
+function unlockAlertAudio(){try{if(!audioCtx)audioCtx=new (window.AudioContext||window.webkitAudioContext)();if(audioCtx.state==='suspended')audioCtx.resume();alertAudioReady=true}catch(e){alertAudioReady=false}}
+function updateAlertButton(){const b=document.getElementById('alertSetupBtn');if(!b)return;b.textContent=orderAlertsEnabled?'🔔 Order Alerts: ON':'🔕 Order Alerts: OFF';b.setAttribute('aria-pressed',String(orderAlertsEnabled));b.title=orderAlertsEnabled?'Turn new-order alerts off':'Turn new-order alerts on'}
+function loadAlertPreference(){orderAlertsEnabled=localStorage.getItem('ds_order_alerts_enabled')==='1';updateAlertButton()}
+async function enableOrderAlerts(){if(orderAlertsEnabled){orderAlertsEnabled=false;localStorage.setItem('ds_order_alerts_enabled','0');stopNewOrderAlarm();updateAlertButton();showInfoDialog('New-order sound, vibration and browser alerts are now OFF. They will stay OFF after refresh until you turn them ON.','Order Alerts Off');return}unlockAlertAudio();orderAlertsEnabled=true;localStorage.setItem('ds_order_alerts_enabled','1');try{if('Notification' in window && Notification.permission==='default')await Notification.requestPermission()}catch(e){};updateAlertButton();showInfoDialog('New-order alerts are now ON. They will stay ON after refresh until you turn them OFF. Keep this admin page open and the device volume on.','Order Alerts On');const pending=Array.from(knownNewOrderIds).map(id=>ordersCache.find(o=>String(o.id)===String(id))).filter(Boolean);if(pending.length)startNewOrderAlarm(pending[0])}
+document.getElementById('alertSetupBtn').onclick=enableOrderAlerts;
+function playOrderBeep(){if(!orderAlertsEnabled||!alertAudioReady)return;try{if(audioCtx.state==='suspended')audioCtx.resume();const now=audioCtx.currentTime;[0,0.22,0.44].forEach((offset,i)=>{const o=audioCtx.createOscillator(),g=audioCtx.createGain();o.type='sine';o.frequency.value=i===1?880:660;g.gain.setValueAtTime(0.0001,now+offset);g.gain.exponentialRampToValueAtTime(0.18,now+offset+0.02);g.gain.exponentialRampToValueAtTime(0.0001,now+offset+0.16);o.connect(g);g.connect(audioCtx.destination);o.start(now+offset);o.stop(now+offset+0.18)})}catch(e){}}
+function showNewOrderAlert(order,notify=true){if(!orderAlertsEnabled)return;const id=order?.order_id||order?.id||'';const name=order?.customer_name||'Customer';const total=money(order?.total);const text=`Order #${id} • ${name} • ${total}`;document.getElementById('newOrderAlertText').textContent=text;document.getElementById('newOrderAlert').classList.remove('hidden');document.title='🔔 NEW ORDER — Darjeeling Steamers';clearTimeout(alertTimer);alertTimer=setTimeout(()=>{if(!newOrderAlarmInterval){document.getElementById('newOrderAlert').classList.add('hidden');document.title='Darjeeling Steamers — Admin Dashboard'}},30000);playOrderBeep();if(navigator.vibrate)try{navigator.vibrate([500,200,500,200,700])}catch(e){};if(notify&&'Notification' in window&&Notification.permission==='granted'){try{const n=new Notification('Darjeeling Steamers — New Order',{body:text,tag:'ds-new-order'});n.onclick=()=>{window.focus();openNewOrders();n.close()}}catch(e){}}}
+function startNewOrderAlarm(order){if(!orderAlertsEnabled)return;if(newOrderAlarmInterval)clearInterval(newOrderAlarmInterval);showNewOrderAlert(order,true);newOrderAlarmInterval=setInterval(()=>{if(knownNewOrderIds.size===0){clearInterval(newOrderAlarmInterval);newOrderAlarmInterval=null;return}document.getElementById('newOrderAlert').classList.remove('hidden');document.title='🔔 NEW ORDER — Darjeeling Steamers';playOrderBeep();if(navigator.vibrate)try{navigator.vibrate([400,180,400])}catch(e){}},15000)}
+function stopNewOrderAlarm(){if(newOrderAlarmInterval){clearInterval(newOrderAlarmInterval);newOrderAlarmInterval=null}clearTimeout(alertTimer);document.getElementById('newOrderAlert').classList.add('hidden');document.title='Darjeeling Steamers — Admin Dashboard'}
+window.openNewOrders=()=>{document.getElementById('newOrderAlert').classList.add('hidden');document.querySelector('[data-tab="orders"]').click();document.querySelector('#orderStageTabs [data-stage="New"]').click();selectedTable='all';renderOrders();window.scrollTo({top:0,behavior:'smooth'})};
+function setupOrderAlerts(){if(orderAlertChannel||!sb)return;try{orderAlertChannel=sb.channel('darjeeling-steamers-new-order-alerts').on('postgres_changes',{event:'*',schema:'public',table:'orders'},payload=>{if(payload.eventType==='INSERT'||(payload.eventType==='UPDATE'&&payload.new?.status==='New'))loadOrders()}).subscribe()}catch(e){console.warn('Realtime order alerts unavailable',e)}}
+async function loadRestaurantStatus(){
+  const statusEl=document.getElementById('restaurantStatus'), btn=document.getElementById('restaurantToggleBtn');
+  try{
+    const {data,error}=await sb.rpc('get_restaurant_status');
+    if(error) throw error;
+    restaurantOnline = data !== false;
+    restaurantStatusReady=true;
+    statusEl.classList.toggle('online',restaurantOnline);statusEl.classList.toggle('offline',!restaurantOnline);
+    statusEl.querySelector('span:last-child').textContent=restaurantOnline?'Restaurant Online':'Restaurant Offline';
+    btn.textContent=restaurantOnline?'Restaurant: ONLINE':'Restaurant: OFFLINE';btn.classList.toggle('offline',!restaurantOnline);
+  }catch(e){
+    restaurantStatusReady=false;
+    statusEl.classList.remove('online','offline');
+    statusEl.querySelector('span:last-child').textContent='Status setup required';
+    btn.textContent='Restaurant: SETUP';btn.classList.remove('offline');
+    console.warn('Restaurant status unavailable',e);
+  }
+}
+async function toggleRestaurantStatus(){
+  if(!restaurantStatusReady){await showInfoDialog('Restaurant Online/Offline is not connected yet. Run the included Supabase SQL setup once, then refresh the dashboard.','Restaurant Status Setup');return;}
+  const next=!restaurantOnline;
+  const title=next?'Open Restaurant for Orders?':'Turn Restaurant Offline?';
+  const message=next?'Customers will be able to place new orders again. Existing orders continue normally.':'New customer orders will be blocked. Orders already placed will continue normally.';
+  if(!await showActionDialog({title,message,warning:next?'':'Existing orders will not be cancelled or changed.',confirmText:next?'Go Online':'Go Offline',danger:!next})) return;
+  const {data,error}=await sb.rpc('set_restaurant_status',{p_is_online:next});
+  if(error || data!==true){await showInfoDialog(error?.message || 'Restaurant status could not be changed.','Could not change restaurant status');return;}
+  restaurantOnline=next;
+  await loadRestaurantStatus();
+  await showInfoDialog(next?'Restaurant is now ONLINE. Customers can place new orders.':'Restaurant is now OFFLINE. New customer orders are blocked; existing orders will continue normally.',next?'Restaurant Online':'Restaurant Offline');
+}
+document.getElementById('restaurantToggleBtn').onclick=toggleRestaurantStatus;
+function setupRestaurantStatus(){
+  if(!sb)return; loadRestaurantStatus();
+  if(restaurantStatusChannel)return;
+  try{restaurantStatusChannel=sb.channel('darjeeling-steamers-restaurant-status').on('postgres_changes',{event:'*',schema:'public',table:'restaurant_settings'},()=>loadRestaurantStatus()).subscribe()}catch(e){console.warn('Restaurant status realtime unavailable',e)}
+}
+document.getElementById("loginForm").addEventListener("submit",async e=>{e.preventDefault();const msg=document.getElementById("loginMsg");msg.innerHTML="";const {error}=await sb.auth.signInWithPassword({email:document.getElementById("email").value.trim(),password:document.getElementById("password").value});if(error)msg.innerHTML='<div class="error">'+esc(error.message)+'</div>';else{localStorage.setItem("ds_order_alerts_enabled","1");unlockAlertAudio();try{if("Notification" in window&&Notification.permission==="default")await Notification.requestPermission()}catch(e){}showApp()}});
+document.getElementById("logoutBtn").onclick=async()=>{await sb.auth.signOut();location.reload()};
+document.querySelectorAll(".tab[data-tab]").forEach(b=>b.onclick=()=>{document.querySelectorAll(".tab[data-tab]").forEach(x=>x.classList.remove("active"));b.classList.add("active");["dashboard","orders","history","deleted","sales","expenses","profitloss"].forEach(t=>document.getElementById(t+"Tab").classList.toggle("hidden",t!==b.dataset.tab));if(b.dataset.tab==="sales")loadSales();if(b.dataset.tab==="expenses")loadExpenses(document.getElementById("expenseHistoryDate").value||localDate());if(b.dataset.tab==="profitloss")loadProfitLoss();if(b.dataset.tab==="history")renderHistory();if(b.dataset.tab==="deleted")loadDeletedOrders()});
+document.querySelectorAll("#orderStageTabs .tab").forEach(b=>b.onclick=()=>{document.querySelectorAll("#orderStageTabs .tab").forEach(x=>x.classList.remove("active"));b.classList.add("active");currentStage=b.dataset.stage;renderOrders()});
+async function fetchAllOrderRows(queryBuilder){
+  const pageSize=1000;
+  let rows=[];
+  for(let from=0;;from+=pageSize){
+    const {data,error}=await queryBuilder.range(from,from+pageSize-1);
+    if(error) return {data:null,error};
+    const page=data||[];
+    rows.push(...page);
+    if(page.length<pageSize) break;
+  }
+  return {data:rows,error:null};
+}
+async function loadOrders(){
+  // Active/cancelled workflow orders are loaded separately from completed history.
+  // There is deliberately no 200-row cap here; pagination protects the dashboard
+  // from Supabase's per-request row limit while keeping all current orders visible.
+  const activeRes=await fetchAllOrderRows(q=>sb.from("orders").select("*")
+    .or("is_deleted.is.null,is_deleted.eq.false")
+    .in("status",["New","Preparing","Served","Cancelled"])
+    .order("created_at",{ascending:false}));
+  if(activeRes.error){document.getElementById("ordersList").innerHTML='<div class="error">'+esc(activeRes.error.message)+'</div>';return}
+
+  const historyRes=await fetchAllOrderRows(q=>sb.from("orders").select("*")
+    .or("is_deleted.is.null,is_deleted.eq.false")
+    .eq("status","Paid")
+    .order("created_at",{ascending:false}));
+  if(historyRes.error){document.getElementById("ordersList").innerHTML='<div class="error">'+esc(historyRes.error.message)+'</div>';return}
+
+  const incoming=(activeRes.data||[]).filter(o=>o.is_deleted!==true);
+  historyOrdersCache=(historyRes.data||[]).filter(o=>o.is_deleted!==true);
+  const currentNew=new Set(incoming.filter(o=>(o.status||'New')==='New').map(o=>String(o.id)));
+  if(orderAlertsInitialized&&orderAlertsEnabled){const fresh=incoming.filter(o=>(o.status||'New')==='New'&&!knownNewOrderIds.has(String(o.id)));if(fresh.length)startNewOrderAlarm(fresh[0]);else if(currentNew.size===0)stopNewOrderAlarm();}
+  knownNewOrderIds=currentNew;orderAlertsInitialized=true;
+  // Keep one lookup cache for order actions, while the UI renders active and
+  // completed orders from their separate datasets.
+  ordersCache=[...incoming,...historyOrdersCache];
+  renderOrders();renderRecent();renderHistory();
+}
+async function loadDeletedOrders(){
+  // Recently Deleted contains only completed orders moved to the 24-hour recovery window.
+  const {data,error}=await sb.from("orders").select("*").eq("is_deleted",true).order("delete_expires_at",{ascending:true});
+  if(error){document.getElementById("deletedList").innerHTML='<div class="error">'+esc(error.message)+"<br><span class=\"small\">Run the included Supabase SQL setup first.</span></div>";return}
+  deletedOrdersCache=data||[];renderDeletedOrders();
+}
+function remainingText(expires){
+  const ms=new Date(expires||0).getTime()-Date.now();if(ms<=0)return "Expired";
+  const h=Math.floor(ms/3600000),m=Math.floor((ms%3600000)/60000);return `${h}h ${m}m left`;
+}
+function renderDeletedOrders(){
+  const el=document.getElementById("deletedList");
+  const list=deletedOrdersCache.filter(o=>new Date(o.delete_expires_at||0).getTime()>Date.now());
+  if(!list.length){el.innerHTML='<p class="muted">No orders are waiting for recovery.</p>';return}
+  el.innerHTML=list.map(o=>`<div class="order"><div class="order-head"><div><div class="order-id">#${esc(o.order_id||o.id)}</div><div class="small">${esc(o.customer_name||"Customer")} • ${esc(o.customer_phone||"—")} • Table ${esc(o.table_number??"—")}</div></div><span class="badge">Deleted</span></div><div class="order-body"><b>${money(o.total)}</b> • Deleted ${esc(fmtTime(o.deleted_at))}<br><span class="recovery-time">♻️ Recovery: ${esc(remainingText(o.delete_expires_at))}</span></div><div class="actions"><button class="recover-btn" onclick="recoverOrder('${esc(o.id)}')">Recover Order</button><button class="cancel-delete" onclick="permanentlyDeleteDeletedOrder('${esc(o.id)}')">Delete Permanently Now</button><button class="secondary" onclick="viewDeletedOrder('${esc(o.id)}')">Details</button></div></div>`).join("");
+}
+window.recoverOrder=async id=>{
+  const o=deletedOrdersCache.find(x=>String(x.id)===String(id));if(!o)return;
+  if(new Date(o.delete_expires_at||0).getTime()<=Date.now()){alert("The 24-hour recovery period has expired.");await loadDeletedOrders();return}
+  if(!await showActionDialog({title:"Recover Order?",message:`Restore order #${o.order_id||o.id} to Order History?`,warning:"The order will become active again and return to Order History.",confirmText:"Recover Order",danger:false}))return;
+  const {error}=await sb.from("orders").update({is_deleted:false,deleted_at:null,delete_expires_at:null}).eq("id",o.id).eq("is_deleted",true);
+  if(error){alert("Recovery failed: "+error.message);return}
+  alert("Order recovered successfully.");await loadOrders();await loadDeletedOrders();
+};
+window.viewDeletedOrder=async id=>{
+  const o=deletedOrdersCache.find(x=>String(x.id)===String(id));if(!o)return;
+  const {data:items,error}=await sb.from("order_items").select("*").eq("order_id",o.id).gt("quantity",0).order("created_at");
+  const itemHtml=error?'<div class="error">'+esc(error.message)+'</div>':(items||[]).map(i=>`<div class="row"><span>${esc(i.item_name)} × ${esc(i.quantity)}</span><b>${money(i.line_total)}</b></div>`).join("")||'<p class="muted">No item rows found.</p>';
+  document.getElementById("modalContent").innerHTML=`<div class="row"><b>Order ID</b><span>${esc(o.order_id||o.id)}</span></div><div class="row"><b>Customer</b><span>${esc(o.customer_name)}</span></div><div class="row"><b>Phone</b><span>${esc(o.customer_phone||"—")}</span></div><div class="row"><b>Table</b><span>${esc(o.table_number??"—")}</span></div><h3>Items</h3>${itemHtml}<div class="row"><b>Subtotal</b><b>${money(o.subtotal)}</b></div><div class="row"><b>GST</b><b>${money(o.gst)}</b></div><div class="row"><b>Total</b><b>${money(o.total)}</b></div><div class="recovery-box">Recovery available for: <b>${esc(remainingText(o.delete_expires_at))}</b></div>`;
+  document.getElementById("modal").classList.remove("hidden");
+};
+function stageMatch(o,stage){if(stage==="New")return (o.status||"New")==="New";if(stage==="Preparing")return o.status==="Preparing";if(stage==="Served")return o.status==="Served";if(stage==="Paid")return o.status==="Paid";if(stage==="Cancelled")return o.status==="Cancelled";return false}
+function actionButtons(o){const id=esc(o.id);let a=`<button class="secondary" onclick="viewOrder('${id}')">Details</button>`;if(o.status==="New")a+=`<button class="primary" onclick="editOrder('${id}')">Edit Order</button><button class="primary" onclick="acceptOrder('${id}')">Accept Order</button><button class="danger" onclick="cancelOrder('${id}')">Cancel</button>`;else if(o.status==="Preparing")a+=`<button class="primary" onclick="editOrder('${id}')">Modify Order</button><button class="primary" onclick="serveOrder('${id}')">Order Served</button><button class="danger" onclick="cancelOrder('${id}')">Cancel</button>`;else if(o.status==="Served")a+=`<button class="primary" onclick="editOrder('${id}')">Modify Order</button><button class="payment-btn" onclick="confirmPayment('${id}')">₹ Payment Received</button><button class="danger" onclick="cancelOrder('${id}')">Cancel</button>`;else if(o.status==="Cancelled")a+=`<button class="cancel-delete" onclick="deleteCancelledOrder('${id}')">Delete Permanently</button>`;return a}
+function orderCard(o){return `<div class="order"><div class="order-head"><div><div class="order-id">#${esc(o.order_id||o.id)}</div><div class="small">${esc(o.customer_name||"Customer")} • Table ${esc(o.table_number??"—")} • ${esc(o.customer_phone||"—")}</div></div><span class="badge">${esc(o.status||"New")}</span></div><div class="order-body"><b>Total: ${money(o.total)}</b> • ${esc(fmtTime(o.created_at))}${o.status==="Cancelled"?`<div class="cancel-box"><b>Cancellation remark:</b> ${esc(o.cancel_remark||((o.payment_method||"").startsWith("Cancelled • ")?o.payment_method.slice(13):"Not recorded"))}</div>`:""}</div><div class="actions">${actionButtons(o)}</div></div>`}
+function tableNum(o){const n=Number(o?.table_number);return Number.isInteger(n)&&n>=1&&n<=25?String(n):''}
+function activeTableOrders(n){return ordersCache.filter(o=>o.is_deleted!==true && !['Cancelled','Paid'].includes(o.status) && tableNum(o)===String(n))}
+function tableState(n){
+  const all=ordersCache.filter(o=>o.is_deleted!==true&&tableNum(o)===String(n)).sort((a,b)=>new Date(b.created_at||0)-new Date(a.created_at||0));
+  // A table is considered occupied only by its latest non-terminal order.
+  // Older Paid/Cancelled/history rows must never keep a table marked Active.
+  const latest=all[0];
+  if(!latest || ['Cancelled','Paid','Deleted'].includes(latest.status)) return {label:'Available',cls:'',order:null};
+  const label=latest.status==='New'?'New':latest.status==='Preparing'?'Preparing':latest.status==='Served'?'Payment Pending':'Active';
+  return {label,cls:'busy',order:latest};
+}
+function renderTableBoard(){const el=document.getElementById('tableBoard');if(!el)return;el.innerHTML=Array.from({length:25},(_,i)=>{const n=String(i+1),st=tableState(n);return `<button type="button" class="table-tile ${st.cls} ${selectedTable===n?'active':''}" onclick="selectTable('${n}')"><span class="table-dot"></span><div class="table-no">Table ${n}</div><div class="table-state">${esc(st.label)}</div></button>`}).join('');const info=document.getElementById('selectedTableInfo');if(selectedTable==='all'){info.innerHTML='<b>All Tables</b> — select any table above to manage its order.'}else{const st=tableState(selectedTable);if(st.order)info.innerHTML=`<b>Table ${selectedTable}</b> • Order #${esc(st.order.order_id||st.order.id)} • ${esc(st.label)} • ${money(st.order.total)}`;else info.innerHTML=`<b>Table ${selectedTable}</b> • No active order.`}}
+window.selectTable=n=>{selectedTable=String(n);renderTableBoard();renderOrders();};
+function renderOrders(){renderTableBoard();let list=ordersCache.filter(o=>stageMatch(o,currentStage));if(selectedTable!=='all')list=list.filter(o=>tableNum(o)===selectedTable);document.getElementById("ordersList").innerHTML=list.length?list.map(orderCard).join(""):'<p class="muted">No orders in this table/stage.</p>'}
+function renderRecent(){document.getElementById("recentOrders").innerHTML=ordersCache.filter(o=>o.status!=="Deleted").slice(0,8).map(orderCard).join("")||'<p class="muted">No orders found.</p>'}
+function renderHistory(){const list=historyOrdersCache;document.getElementById("historyList").innerHTML=list.length?list.map(o=>`<div class="order"><div class="order-head"><div><div class="order-id">#${esc(o.order_id||o.id)}</div><div class="small">${esc(o.customer_name)} • ${esc(o.customer_phone||"—")} • Table ${esc(o.table_number??"—")}</div></div><span class="badge">Completed</span></div><div class="order-body"><b>${money(o.total)}</b> • ${esc(fmtTime(o.created_at))}<br><span class="small">${esc(o.payment_method||"Payment Received")}</span></div><div class="actions"><button class="secondary" onclick="viewOrder('${esc(o.id)}')">View Bill</button><button class="secondary" onclick="printBill('${esc(o.id)}')">🖨 Print Bill</button><button class="secondary" onclick="sendBill('${esc(o.id)}')">📱 Send Bill</button><button class="danger" onclick="deleteOrder('${esc(o.id)}')">Delete</button></div></div>`).join(""):'<p class="muted">No completed orders yet.</p>'}
+window.viewOrder=async id=>{const o=ordersCache.find(x=>String(x.id)===String(id));if(!o)return;const {data:items,error}=await sb.from("order_items").select("*").eq("order_id",o.id).gt("quantity",0).order("created_at");const rows=items||[];const itemHtml=error?'<div class="error">'+esc(error.message)+'</div>':rows.map(i=>`<div class="row"><span>${esc(i.item_name)} × ${esc(i.quantity)}</span><b>${money(i.line_total)}</b></div>`).join("")||'<p class="muted">No item rows found.</p>';document.getElementById("modalContent").innerHTML=`<div class="row"><b>Order ID</b><span>${esc(o.order_id||o.id)}</span></div><div class="row"><b>Customer</b><span>${esc(o.customer_name)}</span></div><div class="row"><b>Phone</b><span>${esc(o.customer_phone||"—")}</span></div><div class="row"><b>Table</b><span>${esc(o.table_number??"—")}</span></div><div class="row"><b>Status</b><span>${esc(o.status)}</span></div><h3>Items</h3>${itemHtml}<div class="row"><b>Subtotal</b><b>${money(o.subtotal)}</b></div><div class="row"><b>GST 5%</b><b>${money(o.gst)}</b></div><div class="row"><b>Total</b><b>${money(o.total)}</b></div>${o.status==="Cancelled"?`<div class="cancel-box"><b>Cancellation remark:</b> ${esc(o.cancel_remark||((o.payment_method||"").startsWith("Cancelled • ")?o.payment_method.slice(13):"Not recorded"))}</div>`:""}`;document.getElementById("modal").classList.remove("hidden")};
+document.getElementById("closeModal").onclick=()=>document.getElementById("modal").classList.add("hidden");document.getElementById("modal").onclick=e=>{if(e.target.id==="modal")e.currentTarget.classList.add("hidden")};
+window.acceptOrder=async id=>{const o=ordersCache.find(x=>String(x.id)===String(id));if(!o||o.status!=="New")return;if(!await showActionDialog({title:"Accept Order?",message:`Accept order #${o.order_id||o.id} and move it to Preparing?`,confirmText:"Accept Order",danger:false}))return;const {error}=await sb.from("orders").update({status:"Preparing"}).eq("id",o.id);if(error)alert(error.message);else await loadOrders()};
+window.serveOrder=async id=>{const o=ordersCache.find(x=>String(x.id)===String(id));if(!o||o.status!=="Preparing")return;if(!await showActionDialog({title:"Mark Order Served?",message:`Mark order #${o.order_id||o.id} as served?`,confirmText:"Order Served",danger:false}))return;const {error}=await sb.from("orders").update({status:"Served"}).eq("id",o.id);if(error)alert(error.message);else await loadOrders()};
+window.cancelOrder=async id=>{const o=ordersCache.find(x=>String(x.id)===String(id));if(!o||o.status==="Paid"||o.status==="Cancelled")return;const remark=await showInputDialog({title:"Cancel Order",message:`Cancellation remark for order #${o.order_id||o.id}`,placeholder:"Enter cancellation reason…",confirmText:"Cancel Order"});if(remark===null)return;let {error}=await sb.from("orders").update({status:"Cancelled",cancel_remark:remark}).eq("id",o.id);if(error){const fallback=`Cancelled • ${remark}`;const r=await sb.from("orders").update({status:"Cancelled",payment_method:fallback}).eq("id",o.id);error=r.error}if(error)showInfoDialog("Could not cancel this order.\n\n"+error.message,"Cancellation Failed");else await loadOrders()};
+window.editOrder=async id=>{const o=ordersCache.find(x=>String(x.id)===String(id));if(!o)return;if(o.status==="Paid"){showInfoDialog("Paid orders cannot be modified after payment is confirmed.","Order Already Paid");return}const {data:items,error}=await sb.from("order_items").select("*").eq("order_id",o.id).gt("quantity",0).order("created_at");if(error){alert(error.message);return}const rows=items||[];document.getElementById("modalContent").innerHTML=`<h3 style="margin-top:14px">Modify Order #${esc(o.order_id||o.id)}</h3><div class="small">Customer: ${esc(o.customer_name)} • Phone: ${esc(o.customer_phone||"—")} • Table: ${esc(o.table_number??"—")}</div><div id="editItems" data-original-ids='${esc(JSON.stringify(rows.map(i=>i.id).filter(Boolean)))}' style="margin-top:12px">${rows.map(i=>editRow(i.item_name,i.quantity,i.price,i.id)).join("")}</div><button class="secondary" onclick="addEditRow()">+ Add Item</button><div id="editTotals" style="margin-top:12px"></div><div class="actions"><button class="primary" onclick="saveOrderEdit('${esc(o.id)}')">Save Changes</button><button class="secondary" onclick="document.getElementById('modal').classList.add('hidden')">Cancel</button></div>`;updateEditTotals();document.getElementById("modal").classList.remove("hidden")};
+function editRow(name="",qty=1,price=0,id=""){return `<div class="edit-row" data-item-id="${esc(id)}"><div style="position:relative;flex:1"><input class="ei-name" value="${esc(name)}" placeholder="Type item name…" autocomplete="off" oninput="handleItemNameInput(this)" onfocus="handleItemNameInput(this)"><div class="item-suggest hidden"></div></div><input class="ei-qty" type="number" min="1" value="${Number(qty)||1}" oninput="updateEditTotals()"><input class="ei-price" type="number" min="0" step="0.01" value="${Number(price)||0}" oninput="updateEditTotals()"><button class="danger" onclick="this.parentElement.remove();updateEditTotals()">×</button></div>`}
+function findAdminMenuMatches(value){
+  const q=(value||"").trim().toLowerCase();
+  if(!q)return[];
+  return ADMIN_MENU_ITEMS
+    .filter(x=>x.name.toLowerCase().startsWith(q) || x.name.toLowerCase().includes(q))
+    .sort((a,b)=>{
+      const an=a.name.toLowerCase().startsWith(q), bn=b.name.toLowerCase().startsWith(q);
+      return Number(bn)-Number(an) || a.name.localeCompare(b.name);
+    })
+    .slice(0,12)
+}
+function chooseAdminMenuItem(button){
+  const row=button.closest(".edit-row");
+  if(!row)return;
+  const item=ADMIN_MENU_ITEMS[Number(button.dataset.menuIndex)];
+  if(!item)return;
+  row.querySelector(".ei-name").value=item.name;
+  row.querySelector(".ei-price").value=item.price;
+  const box=row.querySelector(".item-suggest");
+  if(box)box.classList.add("hidden");
+  updateEditTotals();
+}
+function handleItemNameInput(input){
+  const row=input.closest(".edit-row");
+  if(!row)return;
+  const box=row.querySelector(".item-suggest");
+  const q=input.value.trim().toLowerCase();
+  const exact=ADMIN_MENU_ITEMS.find(x=>x.name.toLowerCase()===q);
+  if(exact)row.querySelector(".ei-price").value=exact.price;
+  const matches=findAdminMenuMatches(input.value);
+  if(!matches.length){
+    box.classList.add("hidden");
+    updateEditTotals();
+    return;
+  }
+  box.innerHTML=matches.map(x=>{
+    const idx=ADMIN_MENU_ITEMS.indexOf(x);
+    const detail=x.description?`${x.category} • ${x.description}`:x.category;
+    return `<button type="button" data-menu-index="${idx}" onclick="chooseAdminMenuItem(this)"><div class="suggest-name">${esc(x.name)} — ${money(x.price)}</div><div class="suggest-meta">${esc(detail)}</div></button>`;
+  }).join("");
+  box.classList.remove("hidden");
+  updateEditTotals();
+}
+
+document.addEventListener("click",e=>{if(!e.target.closest(".edit-row"))document.querySelectorAll(".item-suggest").forEach(x=>x.classList.add("hidden"))});
+window.addEditRow=()=>{document.getElementById("editItems").insertAdjacentHTML("beforeend",editRow());updateEditTotals()};
+function getEditItems(){return [...document.querySelectorAll("#editItems .edit-row")].map(r=>({id:r.dataset.itemId||null,name:r.querySelector(".ei-name").value.trim(),qty:Number(r.querySelector(".ei-qty").value),price:Number(r.querySelector(".ei-price").value)})).filter(x=>x.name&&x.qty>0&&x.price>=0)}
+function updateEditTotals(){const sub=getEditItems().reduce((s,x)=>s+x.qty*x.price,0),gst=Math.round(sub*.05),total=sub+gst;const e=document.getElementById("editTotals");if(e)e.innerHTML=`<div class="row"><b>Subtotal</b><b>${money(sub)}</b></div><div class="row"><b>GST 5%</b><b>${money(gst)}</b></div><div class="row"><b>Total</b><b>${money(total)}</b></div>`}
+window.saveOrderEdit=async id=>{
+  const o=ordersCache.find(x=>String(x.id)===String(id));
+  if(!o)return;
+  // Re-check status immediately before the atomic database transaction.
+  const fresh=await sb.from("orders").select("id,status").eq("id",o.id).single();
+  if(fresh.error){alert("Could not verify order status: "+fresh.error.message);return}
+  if(fresh.data?.status==="Paid"){showInfoDialog("Paid orders cannot be modified after payment is confirmed.","Order Already Paid");return}
+
+  const items=getEditItems();
+  if(!items.length){alert("At least one valid item is required.");return}
+  const sub=items.reduce((s,x)=>s+x.qty*x.price,0),gst=Math.round(sub*.05),total=sub+gst;
+
+  // All item deletes/inserts/updates and the order totals are performed by ONE
+  // Supabase RPC transaction. Either everything commits or nothing changes.
+  const rpcItems=items.map(x=>({item_name:x.name,quantity:x.qty,price:x.price,line_total:x.qty*x.price}));
+  const {data:txResult,error:txError}=await sb.rpc("modify_order_atomic",{
+    p_order_id:o.id,
+    p_items:rpcItems
+  });
+  if(txError){
+    console.error(txError);
+    if(String(txError.message||"").toLowerCase().includes("modify_order_atomic")){
+      alert("Order modify backend function is not installed yet. Run the included Supabase SQL file once, then try again.");
+    }else{
+      alert("Order update failed. No partial changes were saved.\n\n"+txError.message);
+    }
+    return;
+  }
+  if(txResult!==true && txResult!=="true" && txResult?.ok!==true){
+    alert("Order update was not completed. No changes were saved.");
+    return;
+  }
+  alert("Order updated successfully.");
+  document.getElementById("modal").classList.add("hidden");
+  await loadOrders();
+};
+window.confirmPayment=async id=>{
+  const o=ordersCache.find(x=>String(x.id)===String(id));
+  if(!o||o.status!=="Served"){alert("Payment can be confirmed only after the order is served.");return}
+  if(!await showActionDialog({title:"Confirm Payment?",message:`Confirm payment received for order #${o.order_id||o.id}?`,warning:"The order will be marked Paid first. Then the bill SMS will be sent automatically.",confirmText:"Confirm Payment",danger:false}))return;
+  try{
+    // STEP 1: mark payment received FIRST. The payment state must never depend
+    // on SMS delivery. The status condition prevents a stale admin screen from
+    // overwriting a changed order.
+    const paid=await sb.from("orders")
+      .update({status:"Paid",payment_method:"Payment Received • Bill Pending"})
+      .eq("id",o.id).eq("status","Served").select("id,status").maybeSingle();
+    if(paid.error)throw paid.error;
+    if(!paid.data)throw new Error("Payment could not be confirmed because the order status changed. Refresh and try again.");
+
+    // STEP 2: only after Paid is committed, send the bill SMS.
+    const {data:{session}}=await sb.auth.getSession();
+    if(!session)throw new Error("Payment is confirmed, but your admin session expired. The order is Paid; log in again to send the bill.");
+    const response=await fetch(SMS_FUNCTION_URL,{method:"POST",headers:{"Content-Type":"application/json","Authorization":`Bearer ${session.access_token}`},body:JSON.stringify({action:"confirm_payment",order_id:o.order_id||o.id})});
+    const result=await response.json().catch(()=>({}));
+    if(!response.ok||!result.ok){
+      // Payment stays Paid. Do not roll it back because SMS delivery is a
+      // separate operation. The admin can use Send Bill again from history.
+      await sb.from("orders").update({payment_method:"Payment Received • Bill Pending"}).eq("id",o.id).eq("status","Paid");
+      throw new Error(result.error||"Payment is confirmed, but the bill SMS could not be sent. Use Send Bill from Order History.");
+    }
+    await sb.from("orders").update({payment_method:"Payment Received • Bill Sent"}).eq("id",o.id).eq("status","Paid");
+    alert("Payment confirmed. Order is Paid and the bill was sent to the customer's mobile number.");
+    await loadOrders();await loadToday();
+  }catch(e){
+    console.error(e);
+    alert(e.message||"Payment confirmation failed.");
+    await loadOrders();await loadToday();
+  }
+};
+window.sendBill=async id=>{const o=ordersCache.find(x=>String(x.id)===String(id));if(!o||o.status!=="Paid")return;try{const {data:{session}}=await sb.auth.getSession();if(!session)throw new Error("Please login again.");const response=await fetch(SMS_FUNCTION_URL,{method:"POST",headers:{"Content-Type":"application/json","Authorization":`Bearer ${session.access_token}`},body:JSON.stringify({action:"confirm_payment",order_id:o.order_id||o.id})});const result=await response.json().catch(()=>({}));if(!response.ok||!result.ok)throw new Error(result.error||"Bill SMS failed.");alert("Bill sent to customer mobile number.")}catch(e){alert(e.message)}};
+window.printBill=async id=>{const o=ordersCache.find(x=>String(x.id)===String(id));if(!o)return;const {data:items}=await sb.from("order_items").select("*").eq("order_id",o.id).gt("quantity",0).order("created_at");const rows=(items||[]).map(i=>`<tr><td>${esc(i.item_name)}</td><td>${esc(i.quantity)}</td><td>${money(i.price)}</td><td>${money(i.line_total)}</td></tr>`).join("");const w=window.open("","_blank","width=700,height=800");if(!w){alert("Please allow pop-ups to print the bill.");return}w.document.write(`<!doctype html><html><head><title>Bill #${esc(o.order_id||o.id)}</title><style>body{font-family:Arial;padding:30px;color:#222}h1{text-align:center}table{width:100%;border-collapse:collapse;margin-top:20px}th,td{padding:9px;border-bottom:1px solid #ddd;text-align:left}.r{text-align:right}</style></head><body><h1>Darjeeling Steamers</h1><p><b>Bill:</b> #${esc(o.order_id||o.id)}<br><b>Customer:</b> ${esc(o.customer_name)}<br><b>Mobile:</b> ${esc(o.customer_phone||"—")}<br><b>Table:</b> ${esc(o.table_number??"—")}</p><table><thead><tr><th>Item</th><th>Qty</th><th>Price</th><th>Amount</th></tr></thead><tbody>${rows}</tbody></table><p class="r">Subtotal: ${money(o.subtotal)}<br>GST 5%: ${money(o.gst)}<br><b>Total: ${money(o.total)}</b></p><p>Payment: ${esc(o.payment_method||"Paid")}</p><script>window.onload=()=>window.print()<\/script></body></html>`);w.document.close()};
+window.deleteOrder=async id=>{
+  const o=ordersCache.find(x=>String(x.id)===String(id));if(!o||o.status!=="Paid")return;
+  if(!await showActionDialog({title:"Move to Recently Deleted?",message:`Delete completed order #${o.order_id||o.id}?`,warning:"The order will leave Order History immediately but remain recoverable for 24 hours.",confirmText:"Move to Recently Deleted",danger:true}))return;
+  const expires=new Date(Date.now()+24*60*60*1000).toISOString();
+  const {error}=await sb.from("orders").update({is_deleted:true,deleted_at:new Date().toISOString(),delete_expires_at:expires}).eq("id",o.id).eq("status","Paid");
+  if(error){alert("Could not move this order to Recently Deleted: "+error.message);return}
+  alert("Order moved to Recently Deleted. You have 24 hours to recover it.");await loadOrders();await loadDeletedOrders();
+};
+window.deleteCancelledOrder=async id=>{
+  const o=ordersCache.find(x=>String(x.id)===String(id));if(!o||o.status!=="Cancelled")return;
+  const ok=await showActionDialog({title:"Delete Cancelled Order?",message:`Are you sure you want to permanently delete order #${o.order_id||o.id}?`,warning:"This order will be removed immediately. Its order items will also be deleted. This action cannot be undone and the order will not appear in Sales History.",confirmText:"Delete Permanently",danger:true});
+  if(!ok)return;
+  const {data,error}=await sb.rpc("permanently_delete_order",{p_order_id:o.id});
+  if(error){showInfoDialog("Could not permanently delete the cancelled order.\n\n"+error.message,"Delete Failed");return}
+  if(data!==true && data!=="true"){showInfoDialog("The order could not be deleted. Please try again.","Delete Failed");return}
+  await loadOrders();await loadToday();await showInfoDialog(`Order #${o.order_id||o.id} was permanently deleted.`,"Order Deleted");
+};
+window.permanentlyDeleteDeletedOrder=async id=>{
+  const o=deletedOrdersCache.find(x=>String(x.id)===String(id));if(!o)return;
+  const ok=await showActionDialog({title:"Delete Permanently?",message:`Permanently delete order #${o.order_id||o.id}?`,warning:"This order will be removed immediately along with its order items. It cannot be recovered later and will not appear in Sales History or Most Ordered.",confirmText:"Delete Permanently",danger:true});
+  if(!ok)return;
+  const {data,error}=await sb.rpc("permanently_delete_order",{p_order_id:o.id});
+  if(error){showInfoDialog("Could not permanently delete this order.\n\n"+error.message,"Delete Failed");return}
+  if(data!==true && data!=="true"){showInfoDialog("The order could not be deleted. Please try again.","Delete Failed");return}
+  await loadOrders();await loadDeletedOrders();await loadToday();await showInfoDialog(`Order #${o.order_id||o.id} was permanently deleted and cannot be recovered.`,"Order Deleted");
+};
+
+async function loadToday(){const {start,end}=dayRange(localDate());const {data,error}=await sb.from("orders").select("*").gte("created_at",start).lte("created_at",end);if(error)return;const rows=(data||[]).filter(x=>x.is_deleted!==true && !['Cancelled','Deleted'].includes(x.status));const paidRows=rows.filter(x=>x.status==="Paid");document.getElementById("todayOrders").textContent=rows.length;document.getElementById("todaySales").textContent=money(paidRows.reduce((s,x)=>s+Number(x.total||0),0));document.getElementById("todayGst").textContent=money(paidRows.reduce((s,x)=>s+Number(x.gst||0),0));const {data:ex}=await sb.from("expenses").select("amount").eq("expense_date",localDate());document.getElementById("todayExpenses").textContent=money((ex||[]).reduce((s,x)=>s+Number(x.amount||0),0))}
+function monthRange(month){const [y,m]=month.split("-").map(Number);if(!y||!m)return null;const start=`${month}-01T00:00:00+05:30`;const last=new Date(Date.UTC(y,m,0));const day=String(last.getUTCDate()).padStart(2,"0");const end=`${month}-${day}T23:59:59.999+05:30`;return {start,end}}
+function salesRangeFromUI(){const mode=document.getElementById("salesView").value;if(mode==="date"){const d=document.getElementById("salesDate").value||localDate();return {start:`${d}T00:00:00+05:30`,end:`${d}T23:59:59.999+05:30`,label:`${d}`}}if(mode==="range"){const from=document.getElementById("salesFrom").value,to=document.getElementById("salesTo").value;if(!from||!to){alert("Please select both From Date and To Date.");return null}if(from>to){alert("From Date cannot be after To Date.");return null}return {start:`${from}T00:00:00+05:30`,end:`${to}T23:59:59.999+05:30`,label:`${from} to ${to}`}}const month=document.getElementById("salesMonth").value;const r=monthRange(month||localDate().slice(0,7));return r?{...r,label:month||localDate().slice(0,7)}:null}
+function updateSalesView(){const mode=document.getElementById("salesView").value;document.getElementById("salesDateWrap").classList.toggle("hidden",mode!=="date");document.getElementById("salesFromWrap").classList.toggle("hidden",mode!=="range");document.getElementById("salesToWrap").classList.toggle("hidden",mode!=="range");document.getElementById("salesMonthWrap").classList.toggle("hidden",mode!=="month")}
+async function loadSales(){const range=salesRangeFromUI();if(!range)return;const {data,error}=await sb.from("orders").select("*").gte("created_at",range.start).lte("created_at",range.end).order("created_at",{ascending:false});if(error){document.getElementById("salesSummary").innerHTML='<div class="error">'+esc(error.message)+'</div>';return}const rows=(data||[]).filter(x=>x.is_deleted!==true && x.status==='Paid'),sales=rows.reduce((s,x)=>s+Number(x.total||0),0),gst=rows.reduce((s,x)=>s+Number(x.gst||0),0),sub=rows.reduce((s,x)=>s+Number(x.subtotal||0),0);document.getElementById("salesSummary").innerHTML=`<div class="small" style="margin-bottom:10px">Showing sales for <b>${esc(range.label)}</b></div><div class="stats"><div class="stat"><div class="label">Orders</div><div class="value">${rows.length}</div></div><div class="stat"><div class="label">Subtotal</div><div class="value">${money(sub)}</div></div><div class="stat"><div class="label">Sales</div><div class="value">${money(sales)}</div></div><div class="stat"><div class="label">GST</div><div class="value">${money(gst)}</div></div></div>`;document.getElementById("salesTable").innerHTML=rows.map(o=>`<tr><td>#${esc(o.order_id||o.id)}</td><td>${esc(o.customer_name)}</td><td>${esc(o.table_number??"—")}</td><td>${money(o.subtotal)}</td><td>${money(o.gst)}</td><td>${money(o.total)}</td><td>${esc(o.status)}</td><td>${esc(fmtTime(o.created_at))}</td></tr>`).join("")||'<tr><td colspan="8">No sales for this period.</td></tr>'}
+document.getElementById("salesView").addEventListener("change",()=>{updateSalesView()});
+document.getElementById("salesRefresh").onclick=()=>loadSales();
+document.getElementById("expenseForm").addEventListener("submit",async e=>{e.preventDefault();const msg=document.getElementById("expenseMsg");msg.innerHTML="";const payload={expense_date:document.getElementById("expenseDate").value,title:document.getElementById("expenseTitle").value.trim(),amount:Number(document.getElementById("expenseAmount").value),notes:document.getElementById("expenseNotes").value.trim()};const {error}=await sb.from("expenses").insert(payload);if(error)msg.innerHTML='<div class="error">'+esc(error.message)+'</div>';else{msg.innerHTML='<div class="success">Expense added.</div>';e.target.reset();document.getElementById("expenseDate").value=localDate();await loadToday();await loadExpenses(localDate())}});
+let expenseEditId=null;
+async function loadExpenses(date){const {data,error}=await sb.from("expenses").select("*").eq("expense_date",date).order("created_at",{ascending:false});if(error){document.getElementById("expenseTable").innerHTML='<tr><td colspan="6">'+esc(error.message)+'</td></tr>';return}document.getElementById("expenseTable").innerHTML=(data||[]).map(x=>`<tr><td>${esc(x.expense_date)}</td><td>${esc(x.title)}</td><td>${money(x.amount)}</td><td>${esc(x.notes||"")}</td><td>${esc(fmtTime(x.created_at))}</td><td><div class="actions" style="margin:0"><button class="secondary" onclick="editExpense('${String(x.id)}')">Modify</button><button class="danger-soft" onclick="deleteExpense('${String(x.id)}')">Delete</button></div></td></tr>`).join("")||'<tr><td colspan="6">No expenses for this date.</td></tr>'}
+async function editExpense(id){const {data,error}=await sb.from("expenses").select("*").eq("id",id).maybeSingle();if(error||!data){await showInfoDialog(error?.message||'Expense not found.','Modify Expense');return}expenseEditId=id;document.getElementById('editExpenseDate').value=data.expense_date||'';document.getElementById('editExpenseTitle').value=data.title||'';document.getElementById('editExpenseAmount').value=Number(data.amount||0);document.getElementById('editExpenseNotes').value=data.notes||'';document.getElementById('editExpenseMsg').innerHTML='';document.getElementById('expenseModal').classList.remove('hidden')}
+function closeExpenseModal(){expenseEditId=null;document.getElementById('expenseModal').classList.add('hidden')}
+document.getElementById('expenseModalClose').onclick=closeExpenseModal;document.getElementById('expenseModalCancel').onclick=closeExpenseModal;
+document.getElementById('expenseModalSave').onclick=async()=>{if(!expenseEditId)return;const payload={expense_date:document.getElementById('editExpenseDate').value,title:document.getElementById('editExpenseTitle').value.trim(),amount:Number(document.getElementById('editExpenseAmount').value),notes:document.getElementById('editExpenseNotes').value.trim()};if(!payload.expense_date||!payload.title||!(payload.amount>=0)){document.getElementById('editExpenseMsg').innerHTML='<div class="error">Please fill date, title and a valid amount.</div>';return}const {error}=await sb.from('expenses').update(payload).eq('id',expenseEditId);if(error){document.getElementById('editExpenseMsg').innerHTML='<div class="error">'+esc(error.message)+'</div>';return}closeExpenseModal();await loadExpenses(document.getElementById('expenseHistoryDate').value||localDate());await loadToday();await loadProfitLoss()}
+async function deleteExpense(id){if(!await showActionDialog({title:'Delete Expense?',message:'This expense will be permanently removed.',warning:'Deleted expenses are excluded from Profit / Loss totals.',confirmText:'Delete Expense',danger:true}))return;const {error}=await sb.from('expenses').delete().eq('id',id);if(error){await showInfoDialog(error.message,'Delete Expense Failed');return}await loadExpenses(document.getElementById('expenseHistoryDate').value||localDate());await loadToday();await loadProfitLoss()}
+
+function profitLossRange(){const mode=document.getElementById('plView').value;if(mode==='date'){const d=document.getElementById('plDate').value||localDate();return {start:d+'T00:00:00+05:30',end:d+'T23:59:59.999+05:30',expenseFrom:d,expenseTo:d,label:d}}if(mode==='range'){const from=document.getElementById('plFrom').value,to=document.getElementById('plTo').value;if(!from||!to){alert('Please select both From Date and To Date.');return null}if(from>to){alert('From Date cannot be after To Date.');return null}return {start:from+'T00:00:00+05:30',end:to+'T23:59:59.999+05:30',expenseFrom:from,expenseTo:to,label:from+' to '+to}}if(mode==='week'){const d=new Date((document.getElementById('plDate').value||localDate())+'T12:00:00+05:30');const day=(d.getDay()+6)%7;const monday=new Date(d);monday.setDate(d.getDate()-day);const sunday=new Date(monday);sunday.setDate(monday.getDate()+6);const fmt=x=>x.toLocaleDateString('en-CA',{timeZone:'Asia/Kolkata'});const from=fmt(monday),to=fmt(sunday);return {start:from+'T00:00:00+05:30',end:to+'T23:59:59.999+05:30',expenseFrom:from,expenseTo:to,label:from+' to '+to+' (Weekly)'}}const m=document.getElementById('plMonth').value||localDate().slice(0,7);const [y,mo]=m.split('-').map(Number);const last=new Date(Date.UTC(y,mo,0)).getUTCDate();const from=m+'-01',to=m+'-'+String(last).padStart(2,'0');return {start:from+'T00:00:00+05:30',end:to+'T23:59:59.999+05:30',expenseFrom:from,expenseTo:to,label:m+' (Monthly)'}}
+function updateProfitLossView(){const mode=document.getElementById('plView').value;document.getElementById('plDateWrap').classList.toggle('hidden',mode==='range'||mode==='month');document.getElementById('plFromWrap').classList.toggle('hidden',mode!=='range');document.getElementById('plToWrap').classList.toggle('hidden',mode!=='range');document.getElementById('plMonthWrap').classList.toggle('hidden',mode!=='month')}
+async function loadProfitLoss(){const r=profitLossRange();if(!r)return;const [ordersRes,expRes]=await Promise.all([sb.from('orders').select('*').gte('created_at',r.start).lte('created_at',r.end),sb.from('expenses').select('*').gte('expense_date',r.expenseFrom).lte('expense_date',r.expenseTo)]);if(ordersRes.error||expRes.error){document.getElementById('plSummary').innerHTML='<div class="error">'+esc(ordersRes.error?.message||expRes.error?.message||'Could not load Profit / Loss.')+'</div>';return}const rows=(ordersRes.data||[]).filter(x=>x.is_deleted!==true&&!['Cancelled','Deleted'].includes(x.status)&&(['Completed','Paid'].includes(x.status)||x.payment_confirmed===true));const gross=rows.reduce((s,x)=>s+Number(x.total||0),0),gst=rows.reduce((s,x)=>s+Number(x.gst||0),0),netSales=rows.reduce((s,x)=>s+Number(x.subtotal||0),0),expenses=(expRes.data||[]).reduce((s,x)=>s+Number(x.amount||0),0),pl=netSales-expenses;document.getElementById('plSummary').innerHTML=`<div class="small" style="margin-bottom:10px">Showing Profit / Loss for <b>${esc(r.label)}</b></div><div class="stats"><div class="stat"><div class="label">Paid Sales</div><div class="value">${money(gross)}</div></div><div class="stat"><div class="label">GST</div><div class="value">${money(gst)}</div></div><div class="stat"><div class="label">Net Sales (excl. GST)</div><div class="value">${money(netSales)}</div></div><div class="stat"><div class="label">Expenses</div><div class="value">${money(expenses)}</div></div><div class="stat"><div class="label">${pl>=0?'Total Profit':'Total Loss'}</div><div class="value" style="color:${pl>=0?'#176b3a':'#b42318'}">${money(Math.abs(pl))}</div></div></div><div class="table-wrap" style="margin-top:14px"><table><thead><tr><th>Period</th><th>Paid Orders</th><th>Net Sales</th><th>Expenses</th><th>Profit / Loss</th></tr></thead><tbody><tr><td>${esc(r.label)}</td><td>${rows.length}</td><td>${money(netSales)}</td><td>${money(expenses)}</td><td style="font-weight:800;color:${pl>=0?'#176b3a':'#b42318'}">${pl>=0?'Profit ':'Loss '}${money(Math.abs(pl))}</td></tr></tbody></table></div>`}
+document.getElementById('plView').addEventListener('change',updateProfitLossView);document.getElementById('plRefresh').onclick=loadProfitLoss;
+document.getElementById("expenseRefresh").onclick=()=>loadExpenses(document.getElementById("expenseHistoryDate").value||localDate());
+async function purgeExpiredDeletedOrders(){if(!sb)return;const {error}=await sb.rpc("purge_expired_deleted_orders");if(error && !String(error.message||"").toLowerCase().includes("function"))console.warn("Expired-order cleanup:",error.message)}
+init();setInterval(()=>{if(sb&&!document.getElementById("app").classList.contains("hidden")){refreshAll();purgeExpiredDeletedOrders();if(!document.getElementById("deletedTab").classList.contains("hidden"))loadDeletedOrders();if(!document.getElementById("profitlossTab").classList.contains("hidden"))loadProfitLoss()}},5000);
+</script>
+</body>
+</html>

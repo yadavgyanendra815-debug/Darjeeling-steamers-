@@ -585,25 +585,49 @@ window.saveOrderEdit=async id=>{
   document.getElementById("modal").classList.add("hidden");
   await loadOrders();
 };
-window.confirmPayment=async id=>{
+  window.confirmPayment=async id=>{
   const o=ordersCache.find(x=>String(x.id)===String(id));
-  if(!o||normalizedOrderStatus(o)!=="Served"){alert("Payment can be confirmed only after the order is served.");return}
-  if(!await showActionDialog({title:"Confirm Payment?",message:`Confirm payment received for order #${o.order_id||o.id}?`,warning:"The order will be marked Paid first. Then the bill SMS will be sent automatically.",confirmText:"Confirm Payment",danger:false}))return;
-  try{
-    // STEP 1: mark payment received FIRST. The payment state must never depend
-    // on SMS delivery. The status condition prevents a stale admin screen from
-    // overwriting a changed order.
-    const paid=await sb.from("orders")
-      .update({payment_method:"Payment Received"})
-      .eq("id",o.id).eq("status","Served").select("id,status").maybeSingle();
-    if(paid.error)throw paid.error;
-    if(!paid.data)throw new Error("Payment could not be confirmed because the order status changed. Refresh and try again.");
 
-    await loadOrders();await loadToday();
+  if(!o||normalizedOrderStatus(o)!=="Served"){
+    alert("Payment can be confirmed only after the order is served.");
+    return;
+  }
+
+  if(!await showActionDialog({
+    title:"Confirm Payment?",
+    message:`Confirm payment received for order #${o.order_id||o.id}?`,
+    confirmText:"Confirm Payment",
+    danger:false
+  })) return;
+
+  try{
+    const paid=await sb.from("orders")
+      .update({
+        status:"Paid",
+        payment_method:"Payment Received"
+      })
+      .eq("id",o.id)
+      .eq("status","Served")
+      .select("id,status")
+      .maybeSingle();
+
+    if(paid.error) throw paid.error;
+
+    if(!paid.data){
+      throw new Error("Payment could not be confirmed. Refresh and try again.");
+    }
+
+    alert("Payment confirmed. Order is Paid.");
+
+    await loadOrders();
+    await loadToday();
+
   }catch(e){
     console.error(e);
-    alert(e.message||"Payment confirmation failed.");
-    await loadOrders();await loadToday();
+    alert(e?.message||String(e));
+
+    await loadOrders();
+    await loadToday();
   }
 };
 window.printBill=async id=>{const o=ordersCache.find(x=>String(x.id)===String(id));if(!o)return;const {data:items}=await sb.from("order_items").select("*").eq("order_id",o.id).gt("quantity",0).order("created_at");const rows=(items||[]).map(i=>`<tr><td>${esc(i.item_name)}</td><td>${esc(i.quantity)}</td><td>${money(i.price)}</td><td>${money(i.line_total)}</td></tr>`).join("");const w=window.open("","_blank","width=700,height=800");if(!w){alert("Please allow pop-ups to print the bill.");return}w.document.write(`<!doctype html><html><head><title>Bill #${esc(o.order_id||o.id)}</title><style>body{font-family:Arial;padding:30px;color:#222}h1{text-align:center}table{width:100%;border-collapse:collapse;margin-top:20px}th,td{padding:9px;border-bottom:1px solid #ddd;text-align:left}.r{text-align:right}</style></head><body><h1>Darjeeling Steamers</h1><p><b>Bill:</b> #${esc(o.order_id||o.id)}<br><b>Customer:</b> ${esc(o.customer_name)}<br><b>Mobile:</b> ${esc(o.customer_phone||"—")}<br><b>Table:</b> ${esc(o.table_number??"—")}</p><table><thead><tr><th>Item</th><th>Qty</th><th>Price</th><th>Amount</th></tr></thead><tbody>${rows}</tbody></table><p class="r">Subtotal: ${money(o.subtotal)}<br>GST ${gstPercent}%: ${money(o.gst)}<br><b>Total: ${money(o.total)}</b></p><p>Payment: ${esc(o.payment_method||"Paid")}</p><script>window.onload=()=>window.print()<\/script></body></html>`);w.document.close()};

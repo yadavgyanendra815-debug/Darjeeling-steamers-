@@ -518,7 +518,7 @@ function showCat(cat,btn){
     let d=document.createElement("div");
     d.className="card";
     const img=imageFor(name);
-    const imageClass = ["Vegetarian Thali &amp; Main Course","Chicken Thali &amp; Main Course","Mutton Thali &amp; Main Course","Pork Thali &amp; Main Course","Ting-Mo (2 pcs)"].includes(name) ? "food-image horizontal-image" : "food-image";
+    const imageClass = ["Vegetarian Thali & Main Course","Chicken Thali & Main Course","Mutton Thali & Main Course","Pork Thali & Main Course","Ting-Mo (2 pcs)"].includes(name) ? "food-image horizontal-image" : "food-image";
     d.innerHTML=`${img?`<img class="${imageClass}" src="${img}" alt="${name}" loading="lazy">`:``}<div class="card-body"><div class="card-top"><h3>${name}</h3><span class="price">${price? "₹"+price:"Ask"}</span></div><div class="desc">${desc||""}</div><button class="add" ${price?"":"disabled"} onclick='add("${name.replace(/"/g,"&quot;")}",${price})'>+ Add to order</button></div>`;
     grid.appendChild(d)
   })

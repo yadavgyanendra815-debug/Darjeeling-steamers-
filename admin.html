@@ -689,6 +689,17 @@ async function loadMenuPrices(){
     handleAdminDbError(e,'Menu price read failed');
     list.innerHTML='<div class="error">'+esc(e?.message||'Menu prices could not be loaded.')+'</div>';
   }
+  document.addEventListener('click', function(e){
+  const button = e.target.closest('.menu-save-btn');
+  if(!button) return;
+
+  saveMenuPrice(
+    button.dataset.item,
+    button.dataset.input,
+    button.dataset.avail,
+    button
+  );
+});
 }
 window.saveMenuPrice=async function(itemName,inputId,availId,button){
   alert("SAVE CLICKED: " + itemName);

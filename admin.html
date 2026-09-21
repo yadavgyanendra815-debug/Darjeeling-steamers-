@@ -406,7 +406,7 @@ async function loadOrders(){
       historyResult=historyRes.data||{};
     }
     const historyRows=shouldLoadHistory?(Array.isArray(historyResult.rows)?historyResult.rows:[]):historyOrdersCache;
-    const all=[...(activeRes.data||[]),...(cancelledRes.data||[]),...historyRows].filter(o=>!orderIsDeleted(o)).sort((a,b)=>new Date(b.created_at||0)-new Date(a.created_at||0));
+    const all=[...(activeRes.data||[]),...(cancelledRes.data||[]).filter(cancelled=>!(activeRes.data||[]).some(active=>String(active.id)===String(cancelled.id))),...historyRows].filter(o=>!orderIsDeleted(o)).sort((a,b)=>new Date(b.created_at||0)-new Date(a.created_at||0));
     ordersCache=all;
     if(shouldLoadHistory) historyOrdersCache=historyRows.filter(isPaidOrder);
     window.historyTotalCount=Number(historyResult.total_count||0);

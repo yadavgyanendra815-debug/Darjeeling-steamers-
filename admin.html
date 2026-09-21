@@ -599,19 +599,6 @@ window.confirmPayment=async id=>{
     if(paid.error)throw paid.error;
     if(!paid.data)throw new Error("Payment could not be confirmed because the order status changed. Refresh and try again.");
 
-    // STEP 2: only after Paid is committed, send the bill SMS.
-    const {data:{session}}=await sb.auth.getSession();
-    if(!session)throw new Error("Payment is confirmed, but your admin session expired. The order is Paid; log in again to send the bill.");
-    const response=await fetch(SMS_FUNCTION_URL,{method:"POST",headers:{"Content-Type":"application/json","Authorization":`Bearer ${session.access_token}`},body:JSON.stringify({action:"confirm_payment",order_id:o.order_id||o.id})});
-    const result=await response.json().catch(()=>({}));
-    if(!response.ok||!result.ok){
-      // Payment stays Paid. Do not roll it back because SMS delivery is a
-      // separate operation. The admin can use Send Bill again from history.
-      await sb.from("orders").update({payment_method:"Payment Received • Bill Pending"}).eq("id",o.id).eq("status","Paid");
-      throw new Error(result.error||"Payment is confirmed, but the bill SMS could not be sent. Use Send Bill from Order History.");
-    }
-    await sb.from("orders").update({payment_method:"Payment Received • Bill Sent"}).eq("id",o.id).eq("status","Paid");
-    alert("Payment confirmed. Order is Paid and the bill was sent to the customer's mobile number.");
     await loadOrders();await loadToday();
   }catch(e){
     console.error(e);

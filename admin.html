@@ -691,6 +691,7 @@ async function loadMenuPrices(){
   }
 }
 window.saveMenuPrice=async function(itemName,inputId,availId,button){
+  alert("SAVE CLICKED: " + itemName);
   const input=document.getElementById(inputId),avail=document.getElementById(availId),msg=document.getElementById('menuPriceMsg');
   const raw=input?.value.trim();
   if(raw===''){msg.innerHTML='<div class="error">Please enter a price.</div>';return;}

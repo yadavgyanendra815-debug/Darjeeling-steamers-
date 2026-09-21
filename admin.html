@@ -603,9 +603,10 @@ window.saveOrderEdit=async id=>{
   try{
     const paid=await sb.from("orders")
       .update({
-        status:"Paid",
-        payment_method:"Payment Received"
-      })
+  status:"Paid",
+  payment_method:"Payment Received",
+  payment_confirmed:true
+})
       .eq("id",o.id)
       .eq("status","Served")
       .select("id,status")

@@ -664,6 +664,7 @@ async function loadToday(){
   if(error){handleAdminDbError(error,"Today summary failed");return;}
   const summary=Array.isArray(data) ? (data[0] || {}) : (data || {});
   console.log("TODAY RPC DATA:", data);
+  alert("Today RPC Data: " + JSON.stringify(data) + "\nError: " + JSON.stringify(error));
 console.log("TODAY RPC ERROR:", error);
 console.log("TODAY SUMMARY:", summary);
   document.getElementById("todayOrders").textContent=Number(summary.order_count||0).toLocaleString('en-IN');

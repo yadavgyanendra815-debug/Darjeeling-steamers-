@@ -311,8 +311,8 @@ style="background:transparent;color:var(--accent);border:1px solid var(--accent)
 <script>
 let gstPercent=5;
 const categories={
-"Thali &amp; Main Course":[
-["Vegetarian Thali &amp; Main Course",320],["Chicken Thali &amp; Main Course",420],["Mutton Thali &amp; Main Course",460],["Pork Thali &amp; Main Course",510],
+"Thali & Main Course":[
+["Vegetarian Thali & Main Course",320],["Chicken Thali & Main Course",420],["Mutton Thali & Main Course",460],["Pork Thali & Main Course",510],
 ["Rice",150],["Daal",180],["Chicken Curry",350],["Mutton Curry",400],["Pork Curry",450],["Roti",25],["Ghee",50]],
 "Soups":[["Vegetable Soup",150,"Slow cooked vegetable broth."],["Darjeeling Style Soup",190,"Darjeeling style grated veggies peppery broth."],["Coriander Lemon",200,"Slow cooked vegetable broth with coriander and a dash of lemon."],["Manchow",230,"Spicy tangy soup served with fried noodles."]],
 "Momos":[
@@ -474,16 +474,16 @@ async function processOrder(){
 let cart=[];
 const tabs=document.getElementById("tabs"), grid=document.getElementById("menuGrid");
 let categoryOrder=Object.keys(categories);
-const thaliIndex=categoryOrder.indexOf("Thali &amp; Main Course");
+const thaliIndex=categoryOrder.indexOf("Thali & Main Course");
 if(thaliIndex>=0) categoryOrder.splice(thaliIndex,0,"Most Ordered");
 categoryOrder.forEach((c,i)=>{let b=document.createElement("button");b.className="tab"+(i===0?" active":"");b.textContent=c;b.onclick=()=>showCat(c,b);tabs.appendChild(b)});
 const slugify = s => s.toLowerCase().replace(/&/g,"and").replace(/\//g,"-").replace(/\+/g,"plus").replace(/\(/g,"").replace(/\)/g,"").replace(/\s+/g,"-").replace(/[^a-z0-9-]/g,"");
 const embeddedImages = {'Rice': 'assets/menu-images/menu-002.webp', 'Daal': 'assets/menu-images/menu-003.webp', 'Chicken Curry': 'assets/menu-images/menu-004.webp', 'Mutton Curry': 'assets/menu-images/menu-005.webp', 'Pork Curry': 'assets/menu-images/menu-006.webp', 'Roti': 'assets/menu-images/menu-007.webp', 'Ghee': 'assets/menu-images/menu-008.webp', 'Vegetable Soup': 'assets/menu-images/menu-009.webp', 'Darjeeling Style Soup': 'assets/menu-images/menu-010.webp', 'Coriander Lemon': 'assets/menu-images/menu-011.webp', 'Manchow': 'assets/menu-images/menu-012.webp', 'Steamed Momo': 'assets/menu-images/menu-013.webp', 'Fried Momo': 'assets/menu-images/menu-014.webp', 'Mokthuk / Soupy': 'assets/menu-images/menu-015.webp', 'Butter Garlic': 'assets/menu-images/menu-016.webp', 'Jhol Momo': 'assets/menu-images/menu-017.webp', 'Sesame Chilli Oil': 'assets/menu-images/menu-018.webp', 'Fluffy / Buns': 'assets/menu-images/menu-019.webp', 'Buckwheat': 'assets/menu-images/menu-020.webp', 'Kothey / Potsticker': 'assets/menu-images/menu-021.webp', 'Laphiing (Dry/Soupy)': 'assets/menu-images/menu-022.webp', 'Potato Fries': 'assets/menu-images/menu-023.webp', 'Chat Pata Chaat': 'assets/menu-images/menu-024.webp', 'Shaphalay': 'assets/menu-images/menu-025.webp', 'Fried Chicken Wings': 'assets/menu-images/menu-026.webp', 'Golden Prawns': 'assets/menu-images/menu-027.webp', 'Thukpa': 'assets/menu-images/menu-028.webp', 'Stir Fried Noodles': 'assets/menu-images/menu-029.webp', 'Thenthuk': 'assets/menu-images/menu-030.webp', 'Dry Stir Fried Thenthuk': 'assets/menu-images/menu-031.webp', 'Phing Noodle Soup': 'assets/menu-images/menu-032.webp', 'Stir Fried Phing Noodles': 'assets/menu-images/menu-033.webp', 'Keema Noodles (Chicken)': 'assets/menu-images/menu-034.webp', 'Plain Rice': 'assets/menu-images/menu-035.webp', 'Fried Rice': 'assets/menu-images/menu-036.webp', 'Egg Fried Rice': 'assets/menu-images/menu-037.webp', 'Paneer Chilli': 'assets/menu-images/menu-038.webp', 'Bhutanese Dhatshi': 'assets/menu-images/menu-039.webp', 'Chicken Chilli': 'assets/menu-images/menu-040.webp', 'Mutton Chilli': 'assets/menu-images/menu-041.webp', 'Prawn Chilli': 'assets/menu-images/menu-042.webp', 'Pork Chilli': 'assets/menu-images/menu-043.webp', 'Korean Fried Chicken Wings': 'assets/menu-images/menu-044.webp', 'Korean Dry Ramyun': 'assets/menu-images/menu-045.webp', 'Soupy Korean Ramyun': 'assets/menu-images/menu-046.webp', 'Teokbokki': 'assets/menu-images/menu-047.webp', 'Ra-Bokki': 'assets/menu-images/menu-048.webp', 'Bibimbap': 'assets/menu-images/menu-049.webp', 'Kimbap': 'assets/menu-images/menu-050.webp', 'Katsu': 'assets/menu-images/menu-051.webp', 'Bao (2 pcs)': 'assets/menu-images/menu-052.webp', 'Corn Dog': 'assets/menu-images/menu-053.webp', 'Lemonade': 'assets/menu-images/menu-054.webp', 'Blue Lemonade': 'assets/menu-images/menu-055.webp', 'Crimson Lemonade': 'assets/menu-images/menu-056.webp', 'Virgin Mojito': 'assets/menu-images/menu-057.webp', 'Blue Mojito': 'assets/menu-images/menu-058.webp', 'Crimson Mojito': 'assets/menu-images/menu-059.webp', 'Lemon Iced Tea': 'assets/menu-images/menu-060.webp', 'Peach Iced Tea': 'assets/menu-images/menu-061.webp', 'Milk Boba Tea': 'assets/menu-images/menu-062.webp', 'Dalgona Boba Tea': 'assets/menu-images/menu-063.webp', 'Blue Latte Boba Tea': 'assets/menu-images/menu-064.webp', 'Chocolate Boba Tea': 'assets/menu-images/menu-065.webp', 'Matcha Boba Tea': 'assets/menu-images/menu-066.webp', 'Green Apple Soda': 'assets/menu-images/menu-067.webp', 'Pink Guava Soda': 'assets/menu-images/menu-068.webp', 'Litchi Soda': 'assets/menu-images/menu-069.webp', 'Rhododendron Soda': 'assets/menu-images/menu-070.webp', 'Seasonal Fruit Soda': 'assets/menu-images/menu-071.webp', 'Masala Coke Soda': 'assets/menu-images/menu-072.webp', 'Bottled Water': 'assets/menu-images/menu-073.webp', 'Coca-Cola': 'assets/menu-images/menu-074.webp', 'Milk Tea': 'assets/menu-images/menu-075.webp', 'Black Coffee': 'assets/menu-images/menu-076.webp', 'Milk Coffee': 'assets/menu-images/menu-077.webp', 'Ginger Lemon Honey Tea': 'assets/menu-images/menu-078.webp', 'Teapot (2 cups)': 'assets/menu-images/menu-079.webp', 'Additional Cup': 'assets/menu-images/menu-080.webp', 'Ginger': 'assets/menu-images/menu-081.webp', 'Lemon': 'assets/menu-images/menu-082.webp', 'Honey': 'assets/menu-images/menu-083.webp'};
 
-embeddedImages['Vegetarian Thali &amp; Main Course'] = 'assets/menu-images/menu-084.webp';
-embeddedImages['Chicken Thali &amp; Main Course'] = 'assets/menu-images/menu-085.webp';
-embeddedImages['Mutton Thali &amp; Main Course'] = 'assets/menu-images/menu-086.webp';
-embeddedImages['Pork Thali &amp; Main Course'] = 'assets/menu-images/menu-087.webp';
+embeddedImages['Vegetarian Thali & Main Course'] = 'assets/menu-images/menu-084.webp';
+embeddedImages['Chicken Thali & Main Course'] = 'assets/menu-images/menu-085.webp';
+embeddedImages['Mutton Thali & Main Course'] = 'assets/menu-images/menu-086.webp';
+embeddedImages['Pork Thali & Main Course'] = 'assets/menu-images/menu-087.webp';
 embeddedImages['Boba-Noffee'] = 'assets/menu-images/menu-088.webp';
 embeddedImages['Gulab Jamun (2 pcs)'] = 'assets/menu-images/menu-089.webp';
 embeddedImages['Dessert of the Day'] = 'assets/menu-images/menu-090.webp';
@@ -492,10 +492,10 @@ embeddedImages['Siddu (1 pc)'] = 'assets/menu-images/menu-092.webp';
 embeddedImages['Siddu + Ghee'] = 'assets/menu-images/menu-093.webp';
 function imageFor(name){
   const exactFileImages = {
-    "Vegetarian Thali &amp; Main Course": "assets/menu-images/menu-084.webp",
-    "Chicken Thali &amp; Main Course": "assets/menu-images/menu-085.webp",
-    "Mutton Thali &amp; Main Course": "assets/menu-images/menu-086.webp",
-    "Pork Thali &amp; Main Course": "assets/menu-images/menu-087.webp",
+    "Vegetarian Thali & Main Course": "assets/menu-images/menu-084.webp",
+    "Chicken Thali & Main Course": "assets/menu-images/menu-085.webp",
+    "Mutton Thali & Main Course": "assets/menu-images/menu-086.webp",
+    "Pork Thali & Main Course": "assets/menu-images/menu-087.webp",
     "Boba-Noffee": "assets/menu-images/menu-094.webp",
     "Gulab Jamun (2 pcs)": "assets/menu-images/menu-095.webp",
     "Dessert of the Day": "assets/menu-images/menu-096.webp",

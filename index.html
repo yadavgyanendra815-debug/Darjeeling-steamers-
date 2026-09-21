@@ -698,35 +698,412 @@ function renderMyOrderCard(o,items,isCurrent){
 }
 
 async function printCustomerBill(orderId){
-  try{
-    const {data:bundle,error}=await sb.rpc("get_customer_order",{p_order_id:orderId,p_customer_phone:myOrdersPhone});
-    if(error||!bundle?.order) throw error||new Error("Bill not found");
-    const o=bundle.order;
-    const items=Array.isArray(bundle.items)?bundle.items.filter(i=>Number(i.quantity||0)>0):[];
-    const rows=(items||[]).map(i=>`<tr><td>${escapeMyOrder(i.item_name)}</td><td>${Number(i.quantity||1)}</td><td>${moneyMyOrder(i.price)}</td><td>${moneyMyOrder(i.line_total ?? (Number(i.price||0)*Number(i.quantity||1)))}</td></tr>`).join("");
-    const w=window.open("","_blank","width=480,height=760");
-    if(!w){alert("Please allow pop-ups to print your bill.");return;}
-    w.document.write(`<!doctype html><html><head><title>Bill #${escapeMyOrder(o.order_id||o.id)}</title><style>
-      body{font-family:Arial,sans-serif;padding:24px;color:#163d34;max-width:440px;margin:auto}
-      h1{text-align:center;font-size:24px;margin:0 0 4px}h2{text-align:center;font-size:14px;font-weight:400;margin:0 0 20px;color:#666}
-      .meta{font-size:12px;line-height:1.6;border-bottom:1px solid #ccc;padding-bottom:12px;margin-bottom:12px}
-      table{width:100%;border-collapse:collapse;font-size:12px}th,td{padding:7px 3px;border-bottom:1px solid #ddd;text-align:left}th:nth-child(n+2),td:nth-child(n+2){text-align:right}
-      .sum{margin-top:14px;font-size:13px}.sum div{display:flex;justify-content:space-between;padding:4px 0}.grand{font-size:17px;font-weight:700;border-top:2px solid #163d34;margin-top:5px;padding-top:8px}
-      .paid{text-align:center;margin-top:20px;font-weight:700}.foot{text-align:center;color:#777;font-size:11px;margin-top:20px}
-      @media print{body{padding:10px}}
-    </style></head><body>
-      <h1>Darjeeling Steamers</h1><h2>Delicacies of the Himalayas</h2>
-      <div class="meta"><b>Bill / Order #${escapeMyOrder(o.order_id||o.id)}</b><br>Customer: ${escapeMyOrder(o.customer_name||"—")}<br>Mobile: ${escapeMyOrder(o.customer_phone||"—")}<br>Table: ${escapeMyOrder(o.table_number||"—")}<br>Date: ${escapeMyOrder(new Date(o.created_at||Date.now()).toLocaleString("en-IN"))}</div>
-      <table><thead><tr><th>Item</th><th>Qty</th><th>Rate</th><th>Amount</th></tr></thead><tbody>${rows}</tbody></table>
-      <div class="sum"><div><span>Subtotal</span><b>${moneyMyOrder(o.subtotal)}</b></div><div><span>GST</span><b>${moneyMyOrder(o.gst)}</b></div><div class="grand"><span>Total</span><b>${moneyMyOrder(o.total)}</b></div></div>
-      <div class="paid">Payment Confirmed</div><div class="foot">Thank you for visiting Darjeeling Steamers.</div>
-      <script>window.onload=()=>{window.print();}<\/script>
-    </body></html>`);
-    w.document.close();
-  }catch(err){
-    console.error(err);
-    alert("Bill could not be opened. Please try again.");
+
+  // Open the window immediately from the customer's button click.
+  // This helps prevent mobile browsers from blocking the bill popup.
+  const w = window.open("", "_blank", "width=480,height=760");
+
+  if(!w){
+    await showCustomerInfoPopup(
+      "Bill Window Blocked",
+      "Your browser blocked the bill window. Please allow pop-ups for Darjeeling Steamers and try again."
+    );
+    return;
   }
+
+  // Show a temporary loading screen inside the new window.
+  w.document.write(`
+    <!doctype html>
+    <html>
+    <head>
+      <title>Loading Bill...</title>
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <style>
+        body{
+          margin:0;
+          min-height:100vh;
+          display:grid;
+          place-items:center;
+          background:#f8f3e8;
+          font-family:Arial,sans-serif;
+          color:#173b34;
+        }
+
+        .box{
+          width:min(360px,calc(100% - 40px));
+          background:#fffdf7;
+          border:1px solid #ded4c2;
+          border-radius:24px;
+          padding:30px 24px;
+          text-align:center;
+          box-shadow:0 20px 60px rgba(22,61,52,.18);
+        }
+
+        .icon{
+          width:62px;
+          height:62px;
+          margin:0 auto 14px;
+          border-radius:50%;
+          display:grid;
+          place-items:center;
+          background:#fff0e8;
+          font-size:28px;
+        }
+
+        h2{
+          margin:0 0 8px;
+          font:800 23px Georgia,serif;
+        }
+
+        p{
+          margin:0;
+          color:#6b6257;
+          font-size:14px;
+          line-height:1.6;
+        }
+      </style>
+    </head>
+
+    <body>
+      <div class="box">
+        <div class="icon">🧾</div>
+        <h2>Preparing Your Bill</h2>
+        <p>Please wait while we prepare your Darjeeling Steamers bill.</p>
+      </div>
+    </body>
+    </html>
+  `);
+
+  w.document.close();
+
+  try{
+
+    const {data:bundle,error}=await sb.rpc(
+      "get_customer_order",
+      {
+        p_order_id:orderId,
+        p_customer_phone:myOrdersPhone
+      }
+    );
+
+    if(error || !bundle?.order){
+      throw error || new Error("Bill not found");
+    }
+
+    const o=bundle.order;
+
+    const items=Array.isArray(bundle.items)
+      ? bundle.items.filter(i=>Number(i.quantity||0)>0)
+      : [];
+
+    const rows=(items||[]).map(i=>`
+      <tr>
+        <td>${escapeMyOrder(i.item_name)}</td>
+        <td>${Number(i.quantity||1)}</td>
+        <td>${moneyMyOrder(i.price)}</td>
+        <td>${moneyMyOrder(
+          i.line_total ??
+          (Number(i.price||0)*Number(i.quantity||1))
+        )}</td>
+      </tr>
+    `).join("");
+
+    const billNumber=escapeMyOrder(o.order_id||o.id);
+
+    w.document.open();
+
+    w.document.write(`
+      <!doctype html>
+      <html>
+
+      <head>
+
+        <title>Bill #${billNumber}</title>
+
+        <meta
+          name="viewport"
+          content="width=device-width,initial-scale=1"
+        >
+
+        <style>
+
+          *{
+            box-sizing:border-box;
+          }
+
+          body{
+            margin:0;
+            background:#f8f3e8;
+            font-family:Arial,sans-serif;
+            color:#163d34;
+          }
+
+          .bill{
+            width:min(480px,100%);
+            margin:0 auto;
+            background:#fffdf7;
+            min-height:100vh;
+            padding:26px 22px;
+          }
+
+          .brand{
+            text-align:center;
+            padding-bottom:18px;
+            border-bottom:1px dashed #cfc4b1;
+          }
+
+          .brand-icon{
+            width:62px;
+            height:62px;
+            border-radius:50%;
+            display:grid;
+            place-items:center;
+            margin:0 auto 10px;
+            background:#fff0e8;
+            font-size:28px;
+          }
+
+          h1{
+            margin:0;
+            font:800 25px Georgia,serif;
+            color:#173b34;
+          }
+
+          .tagline{
+            margin-top:5px;
+            color:#7a7064;
+            font-size:12px;
+          }
+
+          .status{
+            margin:18px 0;
+            padding:11px 14px;
+            border-radius:14px;
+            background:#eaf6ef;
+            color:#17633f;
+            text-align:center;
+            font-size:13px;
+            font-weight:800;
+          }
+
+          .meta{
+            font-size:12px;
+            line-height:1.7;
+            padding-bottom:14px;
+            border-bottom:1px solid #ddd4c5;
+          }
+
+          .meta b{
+            color:#173b34;
+          }
+
+          table{
+            width:100%;
+            border-collapse:collapse;
+            margin-top:15px;
+            font-size:12px;
+          }
+
+          th{
+            color:#756b5e;
+            font-weight:700;
+            border-bottom:1px solid #d8cfbf;
+          }
+
+          th,td{
+            padding:8px 3px;
+            text-align:left;
+          }
+
+          th:nth-child(n+2),
+          td:nth-child(n+2){
+            text-align:right;
+          }
+
+          td{
+            border-bottom:1px solid #eee8dc;
+          }
+
+          .sum{
+            margin-top:16px;
+            font-size:13px;
+          }
+
+          .sum div{
+            display:flex;
+            justify-content:space-between;
+            padding:5px 0;
+          }
+
+          .grand{
+            margin-top:7px;
+            padding-top:11px !important;
+            border-top:2px solid #173b34;
+            font-size:18px;
+            font-weight:800;
+          }
+
+          .footer{
+            margin-top:25px;
+            padding-top:15px;
+            border-top:1px dashed #cfc4b1;
+            text-align:center;
+            color:#777064;
+            font-size:11px;
+            line-height:1.6;
+          }
+
+          .print-btn{
+            width:100%;
+            margin-top:20px;
+            border:0;
+            border-radius:14px;
+            padding:13px;
+            background:#0b5a48;
+            color:#fff;
+            font-size:14px;
+            font-weight:800;
+            cursor:pointer;
+          }
+
+          @media print{
+
+            body{
+              background:#fff;
+            }
+
+            .bill{
+              width:100%;
+              padding:10px;
+            }
+
+            .print-btn{
+              display:none;
+            }
+
+          }
+
+        </style>
+
+      </head>
+
+      <body>
+
+        <div class="bill">
+
+          <div class="brand">
+
+            <div class="brand-icon">🧾</div>
+
+            <h1>Darjeeling Steamers</h1>
+
+            <div class="tagline">
+              Delicacies of the Himalayas
+            </div>
+
+          </div>
+
+          <div class="status">
+            ✓ Payment Confirmed
+          </div>
+
+          <div class="meta">
+
+            <b>Bill / Order #${billNumber}</b><br>
+
+            Customer:
+            ${escapeMyOrder(o.customer_name||"—")}<br>
+
+            Mobile:
+            ${escapeMyOrder(o.customer_phone||"—")}<br>
+
+            Table:
+            ${escapeMyOrder(o.table_number||"—")}<br>
+
+            Date:
+            ${escapeMyOrder(
+              new Date(o.created_at||Date.now()).toLocaleString("en-IN")
+            )}
+
+          </div>
+
+          <table>
+
+            <thead>
+
+              <tr>
+                <th>Item</th>
+                <th>Qty</th>
+                <th>Rate</th>
+                <th>Amount</th>
+              </tr>
+
+            </thead>
+
+            <tbody>
+              ${rows}
+            </tbody>
+
+          </table>
+
+          <div class="sum">
+
+            <div>
+              <span>Subtotal</span>
+              <b>${moneyMyOrder(o.subtotal)}</b>
+            </div>
+
+            <div>
+              <span>GST 5%</span>
+              <b>${moneyMyOrder(o.gst)}</b>
+            </div>
+
+            <div class="grand">
+              <span>Total</span>
+              <b>${moneyMyOrder(o.total)}</b>
+            </div>
+
+          </div>
+
+          <button
+            class="print-btn"
+            onclick="window.print()"
+          >
+            🖨 Print Bill
+          </button>
+
+          <div class="footer">
+
+            Thank you for visiting<br>
+            <b>Darjeeling Steamers</b><br>
+            Circuit House Road, Pirdi Kullu, Manali
+
+          </div>
+
+        </div>
+
+      </body>
+
+      </html>
+    `);
+
+    w.document.close();
+
+  }catch(err){
+
+    console.error("Bill error:",err);
+
+    // Close the blank bill window if data could not be loaded.
+    try{
+      w.close();
+    }catch(e){}
+
+    await showCustomerInfoPopup(
+      "Bill Unavailable",
+      "We couldn't open your bill right now. Please try again in a moment."
+    );
+  }
+}
 }
 </script>
 </body></html>
